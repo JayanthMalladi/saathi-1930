@@ -7,17 +7,21 @@ snapshot (cases.json), which is enough for a demo.
 import json
 import os
 import re
+import sys
+import urllib.error
 from datetime import datetime, timedelta
 from pathlib import Path
 
 from fastapi import FastAPI, Header, HTTPException, Request
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 HERE = Path(__file__).resolve().parent
 STORE = HERE / "cases.json"
 TOKEN = os.environ.get("BACKEND_TOKEN")  # Bolna sends this as its api_token; unset = open (local dev)
 CALLERS = HERE.parent / "test_calls" / "callers.json"
+sys.path.insert(0, str(HERE.parent / "agent"))
+import bolna  # noqa: E402  (agent config and Bolna API helper, shared with the CLI)
 
 app = FastAPI(title="Saathi 1930 backend")
 app.mount("/static", StaticFiles(directory=HERE / "static"), name="static")
@@ -190,6 +194,63 @@ async def bank_action(cid: str, req: Request):
     cases[cid].setdefault("bank_actions", []).append([now(), b.get("action")])
     save()
     return {"ok": True}
+
+
+def admin(token: str | None):
+    if not TOKEN or token != TOKEN:
+        raise HTTPException(401, "bad token")
+    if not os.environ.get("BOLNA_API_KEY"):
+        raise HTTPException(500, "BOLNA_API_KEY is not set on the server")
+
+
+def bolna_call(method, path, body=None):
+    try:
+        return bolna.req(method, path, body)
+    except urllib.error.HTTPError as e:
+        return JSONResponse({"bolna_status": e.code, "bolna_error": e.read().decode(errors="replace")}, status_code=502)
+    except urllib.error.URLError as e:
+        return JSONResponse({"bolna_error": f"could not reach Bolna: {e.reason}"}, status_code=502)
+
+
+@app.get("/admin/setup-agent")
+def setup_agent(token: str | None = None):
+    """Create the Bolna agent, or update it when BOLNA_AGENT_ID is set. Open in a browser with ?token=BACKEND_TOKEN."""
+    admin(token)
+    aid = os.environ.get("BOLNA_AGENT_ID")
+    out = bolna_call("PUT", f"/v2/agent/{aid}", bolna.agent_payload()) if aid else bolna_call("POST", "/v2/agent", bolna.agent_payload())
+    if isinstance(out, dict) and not aid:
+        out["next_step"] = "Add this agent_id to Render's Environment as BOLNA_AGENT_ID"
+    return out
+
+
+@app.get("/admin/balance")
+def balance(token: str | None = None):
+    admin(token)
+    return bolna_call("GET", "/user/me")
+
+
+@app.get("/admin/result/{execution_id}")
+def result(execution_id: str, token: str | None = None):
+    admin(token)
+    return bolna_call("GET", f"/executions/{execution_id}")
+
+
+@app.post("/api/call-me")
+async def call_me(req: Request):
+    """Saathi calls the given number. Token-protected for now so nobody spends the credit."""
+    b = await req.json()
+    admin(b.get("token"))
+    phone = re.sub(r"[^\d+]", "", b.get("phone") or "")
+    if not re.fullmatch(r"\+91\d{10}", phone):
+        raise HTTPException(400, "Use an Indian mobile in the form +91XXXXXXXXXX")
+    if not os.environ.get("BOLNA_AGENT_ID"):
+        raise HTTPException(500, "BOLNA_AGENT_ID is not set yet")
+    return bolna_call("POST", "/call", {"agent_id": os.environ["BOLNA_AGENT_ID"], "recipient_phone_number": phone})
+
+
+@app.get("/call")
+def call_page():
+    return FileResponse(HERE / "static" / "call.html")
 
 
 @app.get("/health")

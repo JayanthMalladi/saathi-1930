@@ -20,6 +20,10 @@ API = "https://api.bolna.ai"
 ID_FILE = HERE / "agent_id.txt"
 
 
+def backend_url():
+    return (os.environ.get("BACKEND_URL") or os.environ.get("RENDER_EXTERNAL_URL") or "https://<backend>").rstrip("/")
+
+
 def req(method, path, body=None):
     r = urllib.request.Request(API + path, method=method,
                                data=json.dumps(body).encode() if body is not None else None,
@@ -30,7 +34,7 @@ def req(method, path, body=None):
 
 
 def tool(name, description, props, required, path, pre_call=None):
-    backend = os.environ.get("BACKEND_URL", "https://<backend>").rstrip("/")
+    backend = backend_url()
     t = {
         "name": name,
         "description": description,
@@ -73,7 +77,7 @@ TOOLS = [
 
 
 def agent_payload():
-    backend = os.environ.get("BACKEND_URL", "https://<backend>").rstrip("/")
+    backend = backend_url()
     return {
         "agent_config": {
             "agent_name": "Saathi 1930",

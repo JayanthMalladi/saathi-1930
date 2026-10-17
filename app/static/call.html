@@ -1,0 +1,18 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Saathi calls you</title><link rel="stylesheet" href="/static/style.css"></head><body>
+<header><h1>Saathi 1930 · Get a call back</h1><a href="/bank">Bank queue →</a></header>
+<main><div class="card"><h2>Lost money to an online fraud just now?</h2>
+<p>Enter your number. Saathi will call you within a minute and help you file a complete 1930 complaint, in Hindi or English.</p>
+<p><input id="phone" placeholder="+91 98XXXXXXXX" style="font-size:16px;padding:8px;width:220px"> <button id="go">Call me</button></p>
+<p id="msg" class="empty"></p>
+<p><small>Demo build. No real complaint is filed. Never share OTP or UPI PIN with anyone.</small></p></div></main>
+<script>
+const token = new URLSearchParams(location.search).get('key');
+document.getElementById('go').onclick = async () => {
+  const m = document.getElementById('msg'); m.textContent = 'Calling…';
+  const r = await fetch('/api/call-me', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({phone: document.getElementById('phone').value, token})});
+  const j = await r.json().catch(()=>({}));
+  m.textContent = r.ok ? 'Saathi is calling you now. Keep this page open: /case/latest shows your complaint as it fills in.' : ('Could not start the call: ' + (j.detail || j.bolna_error || r.status));
+};
+</script></body></html>
