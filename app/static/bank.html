@@ -1,0 +1,17 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Fraud Ops Queue</title><link rel="stylesheet" href="/static/style.css"></head><body>
+<header><h1>Fraud ops queue · Demo Bank (mock)</h1><span>Structured cases from Saathi 1930, ranked by money at stake × freshness</span></header>
+<main><div class="card"><table><thead><tr><th>Priority</th><th>Case</th><th>Total</th><th>RBI window</th><th>Debits</th><th>Type</th><th>UTRs checked</th><th></th></tr></thead><tbody id="q"></tbody></table></div></main>
+<script>
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+async function act(id, a){ await fetch(`/api/cases/${encodeURIComponent(id)}/action`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:a})}); load(); }
+async function load(){
+  const cs = await (await fetch('/api/cases')).json();
+  document.getElementById('q').innerHTML = cs.map(c => { const p = c.priority, bad = c.transactions.filter(t=>t.utr_issue).length, done = (c.bank_actions||[]).map(a=>a[1]);
+    return `<tr><td><b>${p.score}</b></td><td><a href="/case/${encodeURIComponent(c.id)}">${esc((c.consent||{}).caller_name || c.id)}</a><br><small>${esc(c.status)}</small></td>
+    <td>₹${p.total_inr.toLocaleString('en-IN')}</td><td>${p.rbi_window?`<span class="pill ${p.working_days<=3?'ok':p.working_days<=7?'warn':'bad'}">${p.rbi_window}</span>`:'—'}</td>
+    <td>${c.transactions.length}</td><td>${esc((c.complaint||{}).fraud_type)}</td><td>${bad?`<span class="pill bad">${bad} to fix</span>`:'<span class="pill ok">all</span>'}</td>
+    <td>${done.includes('dispute') ? '<span class="pill ok">Dispute opened</span>' : `<button onclick='act(${JSON.stringify(c.id)},"dispute")'>Open dispute</button>`}</td></tr>`; }).join('') || '<tr><td colspan="8" class="empty">No cases yet</td></tr>';
+}
+load(); setInterval(load, 2000);
+</script></body></html>

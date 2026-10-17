@@ -1,0 +1,4 @@
+__pycache__/
+cases.json
+.env
+agent/agent_id.txt

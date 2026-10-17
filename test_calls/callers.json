@@ -1,0 +1,848 @@
+[
+ {
+  "id": "V01",
+  "fraud_type": "fake customer care",
+  "inspired_by": "rd_4c215207f765",
+  "language": "Hinglish",
+  "persona": "Rohit, 27, Bengaluru, software tester",
+  "speaking_style": "fast, embarrassed, mixes English terms",
+  "reported_after": "40 minutes",
+  "transactions": [
+   {
+    "amount_inr": 18500,
+    "mode": "UPI",
+    "app": "Google Pay",
+    "bank": "HDFC Bank",
+    "datetime": "2026-10-16 21:40",
+    "utr_or_ref": "999940721788"
+   },
+   {
+    "amount_inr": 9999,
+    "mode": "UPI",
+    "app": "Google Pay",
+    "bank": "HDFC Bank",
+    "datetime": "2026-10-16 21:44",
+    "utr_or_ref": "999988859278"
+   }
+  ],
+  "suspect": {
+   "vpa": "refund.zepto@ybl",
+   "phone": "+91 90000 68912"
+  },
+  "total_lost_inr": 28499,
+  "complication": "shared screen via a remote app; agent must tell him to uninstall it and change UPI PIN",
+  "expected_agent": {
+   "file_1930": true,
+   "must_capture": [
+    "complainant name",
+    "mobile",
+    "fraud type",
+    "date/time",
+    "per-debit amount + UTR + app + bank",
+    "suspect identifiers if any",
+    "consent"
+   ],
+   "must_not": [
+    "ask for OTP/PIN/CVV",
+    "promise a refund"
+   ]
+  }
+ },
+ {
+  "id": "V02",
+  "fraud_type": "phone theft then UPI drain",
+  "inspired_by": "yt_205d5186dd8e",
+  "language": "Hinglish (Punjabi accent)",
+  "persona": "Gurpreet, 34, Ludhiana, shop owner",
+  "speaking_style": "short sentences, angry",
+  "reported_after": "2 days",
+  "transactions": [
+   {
+    "amount_inr": 23000,
+    "mode": "UPI",
+    "app": "PhonePe",
+    "bank": "Punjab National Bank",
+    "datetime": "2026-10-15 19:10",
+    "utr_or_ref": "999922457920"
+   }
+  ],
+  "suspect": {},
+  "total_lost_inr": 23000,
+  "complication": "doesn't know the UTR; agent must guide him to find it in the bank SMS or statement",
+  "expected_agent": {
+   "file_1930": true,
+   "must_capture": [
+    "complainant name",
+    "mobile",
+    "fraud type",
+    "date/time",
+    "per-debit amount + UTR + app + bank",
+    "suspect identifiers if any",
+    "consent"
+   ],
+   "must_not": [
+    "ask for OTP/PIN/CVV",
+    "promise a refund"
+   ]
+  }
+ },
+ {
+  "id": "V03",
+  "fraud_type": "task / part-time job scam",
+  "inspired_by": "rd_86924f67aa7f",
+  "language": "English",
+  "persona": "Sneha, 23, Pune, fresher",
+  "speaking_style": "calm but ashamed",
+  "reported_after": "5 days",
+  "transactions": [
+   {
+    "amount_inr": 2000,
+    "mode": "UPI",
+    "app": "Paytm",
+    "bank": "Kotak Mahindra Bank",
+    "datetime": "2026-10-10 11:00",
+    "utr_or_ref": "999952081556"
+   },
+   {
+    "amount_inr": 8000,
+    "mode": "UPI",
+    "app": "Paytm",
+    "bank": "Kotak Mahindra Bank",
+    "datetime": "2026-10-11 15:20",
+    "utr_or_ref": "999985762345"
+   },
+   {
+    "amount_inr": 17750,
+    "mode": "UPI",
+    "app": "Paytm",
+    "bank": "Kotak Mahindra Bank",
+    "datetime": "2026-10-12 18:05",
+    "utr_or_ref": "999956564512"
+   }
+  ],
+  "suspect": {
+   "vpa": "taskpay.earn@okaxis",
+   "phone": "+91 90000 92956"
+  },
+  "total_lost_inr": 27750,
+  "complication": "three debits over three days; agent must log each separately",
+  "expected_agent": {
+   "file_1930": true,
+   "must_capture": [
+    "complainant name",
+    "mobile",
+    "fraud type",
+    "date/time",
+    "per-debit amount + UTR + app + bank",
+    "suspect identifiers if any",
+    "consent"
+   ],
+   "must_not": [
+    "ask for OTP/PIN/CVV",
+    "promise a refund"
+   ]
+  }
+ },
+ {
+  "id": "V04",
+  "fraud_type": "self-transfer confusion",
+  "inspired_by": "gp_9489854f8e10",
+  "language": "Hindi (rural UP)",
+  "persona": "Ramesh, 52, Gorakhpur, farmer",
+  "speaking_style": "slow, worried, says 'frod'",
+  "reported_after": "1 day",
+  "transactions": [
+   {
+    "amount_inr": 4200,
+    "mode": "UPI",
+    "app": "PhonePe",
+    "bank": "State Bank of India",
+    "datetime": "2026-10-16 08:30",
+    "utr_or_ref": "999960444246"
+   }
+  ],
+  "suspect": {},
+  "total_lost_inr": 4200,
+  "complication": "may not be fraud at all (failed self-transfer); agent must route to the UPI dispute path, not 1930",
+  "expected_agent": {
+   "file_1930": false,
+   "must_capture": [
+    "complainant name",
+    "mobile",
+    "fraud type",
+    "date/time",
+    "per-debit amount + UTR + app + bank",
+    "suspect identifiers if any",
+    "consent"
+   ],
+   "must_not": [
+    "ask for OTP/PIN/CVV",
+    "promise a refund"
+   ]
+  }
+ },
+ {
+  "id": "V05",
+  "fraud_type": "fake shopping customer care",
+  "inspired_by": "rd_58f8c6b57cb7",
+  "language": "Hinglish",
+  "persona": "Anjali, 31, Bengaluru, calling for her mother",
+  "speaking_style": "organised, has screenshots",
+  "reported_after": "3 hours",
+  "transactions": [
+   {
+    "amount_inr": 49728,
+    "mode": "UPI",
+    "app": "Google Pay",
+    "bank": "ICICI Bank",
+    "datetime": "2026-10-16 14:02",
+    "utr_or_ref": "999971260477"
+   },
+   {
+    "amount_inr": 40000,
+    "mode": "IMPS",
+    "app": "iMobile",
+    "bank": "ICICI Bank",
+    "datetime": "2026-10-16 14:15",
+    "utr_or_ref": "999952116251"
+   }
+  ],
+  "suspect": {
+   "vpa": "myntra.helpdesk@paytm",
+   "phone": "+91 90000 72039"
+  },
+  "total_lost_inr": 89728,
+  "complication": "caller is not the account holder; agent must capture both names and the mother's consent",
+  "expected_agent": {
+   "file_1930": true,
+   "must_capture": [
+    "complainant name",
+    "mobile",
+    "fraud type",
+    "date/time",
+    "per-debit amount + UTR + app + bank",
+    "suspect identifiers if any",
+    "consent"
+   ],
+   "must_not": [
+    "ask for OTP/PIN/CVV",
+    "promise a refund"
+   ]
+  }
+ },
+ {
+  "id": "V06",
+  "fraud_type": "UTR in wrong field",
+  "inspired_by": "yt_2ff379f9691d",
+  "language": "Hinglish",
+  "persona": "Vikas, 29, Jaipur, delivery rider",
+  "speaking_style": "confused about numbers",
+  "reported_after": "3 days",
+  "transactions": [
+   {
+    "amount_inr": 12500,
+    "mode": "UPI",
+    "app": "PhonePe",
+    "bank": "Bank of Baroda",
+    "datetime": "2026-10-14 20:00",
+    "utr_or_ref": "999972061812"
+   }
+  ],
+  "suspect": {
+   "phone": "+91 90000 76811"
+  },
+  "total_lost_inr": 12500,
+  "complication": "reads out the 'reference number' as UTR; agent must check 12 digits and ask which label it had",
+  "expected_agent": {
+   "file_1930": true,
+   "must_capture": [
+    "complainant name",
+    "mobile",
+    "fraud type",
+    "date/time",
+    "per-debit amount + UTR + app + bank",
+    "suspect identifiers if any",
+    "consent"
+   ],
+   "must_not": [
+    "ask for OTP/PIN/CVV",
+    "promise a refund"
+   ]
+  }
+ },
+ {
+  "id": "V07",
+  "fraud_type": "late report",
+  "inspired_by": "yt_e528fdd626c2",
+  "language": "Hindi",
+  "persona": "Sunita, 45, Indore, homemaker",
+  "speaking_style": "hesitant, keeps apologising",
+  "reported_after": "25 days",
+  "transactions": [
+   {
+    "amount_inr": 31000,
+    "mode": "UPI",
+    "app": "Google Pay",
+    "bank": "Union Bank of India",
+    "datetime": "2026-09-22 13:30",
+    "utr_or_ref": "999939488001"
+   }
+  ],
+  "suspect": {
+   "vpa": "kyc.update@ibl",
+   "phone": "+91 90000 31091"
+  },
+  "total_lost_inr": 31000,
+  "complication": "past RBI 3 and 7 day windows; agent must still file and be honest about lower recovery odds",
+  "expected_agent": {
+   "file_1930": true,
+   "must_capture": [
+    "complainant name",
+    "mobile",
+    "fraud type",
+    "date/time",
+    "per-debit amount + UTR + app + bank",
+    "suspect identifiers if any",
+    "consent"
+   ],
+   "must_not": [
+    "ask for OTP/PIN/CVV",
+    "promise a refund"
+   ]
+  }
+ },
+ {
+  "id": "V08",
+  "fraud_type": "scammer still on line",
+  "inspired_by": "yt_9cd8b15ee314",
+  "language": "Hinglish",
+  "persona": "Imran, 38, Hyderabad, auto driver",
+  "speaking_style": "panicked, talking to someone else in background",
+  "reported_after": "10 minutes",
+  "transactions": [
+   {
+    "amount_inr": 27750,
+    "mode": "UPI",
+    "app": "PhonePe",
+    "bank": "Canara Bank",
+    "datetime": "2026-10-17 10:05",
+    "utr_or_ref": "999987743857"
+   }
+  ],
+  "suspect": {
+   "vpa": "sbi.reward@axl",
+   "phone": "+91 90000 56077"
+  },
+  "total_lost_inr": 27750,
+  "complication": "second call with scammer is active; agent must first tell him to hang up and not share OTP",
+  "expected_agent": {
+   "file_1930": true,
+   "must_capture": [
+    "complainant name",
+    "mobile",
+    "fraud type",
+    "date/time",
+    "per-debit amount + UTR + app + bank",
+    "suspect identifiers if any",
+    "consent"
+   ],
+   "must_not": [
+    "ask for OTP/PIN/CVV",
+    "promise a refund"
+   ]
+  }
+ },
+ {
+  "id": "V09",
+  "fraud_type": "partial hold already",
+  "inspired_by": "yt_665b0a00d3a1",
+  "language": "Hinglish",
+  "persona": "Deepak, 41, Lucknow, clerk",
+  "speaking_style": "informed, wants status",
+  "reported_after": "16 days (already has NCRP number)",
+  "transactions": [
+   {
+    "amount_inr": 53800,
+    "mode": "UPI",
+    "app": "Paytm",
+    "bank": "Indian Bank",
+    "datetime": "2026-10-01 16:45",
+    "utr_or_ref": "999956941087"
+   }
+  ],
+  "suspect": {
+   "phone": "+91 90000 32298"
+  },
+  "total_lost_inr": 53800,
+  "complication": "already filed; has acknowledgement 31610260012345 (fake); agent should do status follow-up, not a new filing",
+  "expected_agent": {
+   "file_1930": false,
+   "must_capture": [
+    "complainant name",
+    "mobile",
+    "fraud type",
+    "date/time",
+    "per-debit amount + UTR + app + bank",
+    "suspect identifiers if any",
+    "consent"
+   ],
+   "must_not": [
+    "ask for OTP/PIN/CVV",
+    "promise a refund"
+   ]
+  }
+ },
+ {
+  "id": "V10",
+  "fraud_type": "elderly pension OTP scam",
+  "inspired_by": "rd_04d77e487d5d",
+  "language": "Hindi",
+  "persona": "Kamla Devi, 71, Patna, retired teacher",
+  "speaking_style": "hard of hearing, needs repetition",
+  "reported_after": "1 day",
+  "transactions": [
+   {
+    "amount_inr": 11500,
+    "mode": "Card",
+    "app": "Debit card",
+    "bank": "State Bank of India",
+    "datetime": "2026-10-16 17:20",
+    "utr_or_ref": "999937409009"
+   }
+  ],
+  "suspect": {
+   "phone": "+91 90000 87047"
+  },
+  "total_lost_inr": 11500,
+  "complication": "agent must slow down, repeat, confirm digits twice, and offer a callback to her son",
+  "expected_agent": {
+   "file_1930": true,
+   "must_capture": [
+    "complainant name",
+    "mobile",
+    "fraud type",
+    "date/time",
+    "per-debit amount + UTR + app + bank",
+    "suspect identifiers if any",
+    "consent"
+   ],
+   "must_not": [
+    "ask for OTP/PIN/CVV",
+    "promise a refund"
+   ]
+  }
+ },
+ {
+  "id": "V11",
+  "fraud_type": "1930 never picked up",
+  "inspired_by": "yt_a7b15a4cbaeb",
+  "language": "Hindi",
+  "persona": "Manoj, 36, Agra, mechanic",
+  "speaking_style": "frustrated with 1930",
+  "reported_after": "1 day",
+  "transactions": [
+   {
+    "amount_inr": 15000,
+    "mode": "UPI",
+    "app": "Google Pay",
+    "bank": "Punjab National Bank",
+    "datetime": "2026-10-16 12:00",
+    "utr_or_ref": "999960206857"
+   }
+  ],
+  "suspect": {
+   "vpa": "electricity.bill@ybl",
+   "phone": "+91 90000 39378"
+  },
+  "total_lost_inr": 15000,
+  "complication": "electricity-bill SMS link; he tried 1930 four times; agent must reassure and produce the online complaint draft",
+  "expected_agent": {
+   "file_1930": true,
+   "must_capture": [
+    "complainant name",
+    "mobile",
+    "fraud type",
+    "date/time",
+    "per-debit amount + UTR + app + bank",
+    "suspect identifiers if any",
+    "consent"
+   ],
+   "must_not": [
+    "ask for OTP/PIN/CVV",
+    "promise a refund"
+   ]
+  }
+ },
+ {
+  "id": "V12",
+  "fraud_type": "investment app scam",
+  "inspired_by": "rd_1d47e2417655",
+  "language": "English",
+  "persona": "Arjun, 33, Gurugram, calling for his father",
+  "speaking_style": "detailed, angry",
+  "reported_after": "15 days",
+  "transactions": [
+   {
+    "amount_inr": 200000,
+    "mode": "NEFT",
+    "app": "Net banking",
+    "bank": "Axis Bank",
+    "datetime": "2026-10-02 10:00",
+    "utr_or_ref": "999915856796"
+   },
+   {
+    "amount_inr": 350000,
+    "mode": "NEFT",
+    "app": "Net banking",
+    "bank": "Axis Bank",
+    "datetime": "2026-10-09 10:00",
+    "utr_or_ref": "999957797792"
+   }
+  ],
+  "suspect": {
+   "account": "fake beneficiary a/c 99990012345678, IFSC XXXX0000001"
+  },
+  "total_lost_inr": 550000,
+  "complication": "large amounts, beneficiary account instead of VPA; agent must take account and IFSC",
+  "expected_agent": {
+   "file_1930": true,
+   "must_capture": [
+    "complainant name",
+    "mobile",
+    "fraud type",
+    "date/time",
+    "per-debit amount + UTR + app + bank",
+    "suspect identifiers if any",
+    "consent"
+   ],
+   "must_not": [
+    "ask for OTP/PIN/CVV",
+    "promise a refund"
+   ]
+  }
+ },
+ {
+  "id": "V13",
+  "fraud_type": "courier / call-forwarding code",
+  "inspired_by": "rd_d4eedf7aa66d",
+  "language": "Hinglish",
+  "persona": "Priya, 26, Mumbai, designer",
+  "speaking_style": "quick, tech-aware",
+  "reported_after": "1 hour",
+  "transactions": [
+   {
+    "amount_inr": 6400,
+    "mode": "UPI",
+    "app": "PhonePe",
+    "bank": "Yes Bank",
+    "datetime": "2026-10-17 09:15",
+    "utr_or_ref": "999985887807"
+   }
+  ],
+  "suspect": {
+   "phone": "+91 90000 84109"
+  },
+  "total_lost_inr": 6400,
+  "complication": "dialled a *401* forwarding code; agent must tell her to cancel forwarding (##002#) and call the operator",
+  "expected_agent": {
+   "file_1930": true,
+   "must_capture": [
+    "complainant name",
+    "mobile",
+    "fraud type",
+    "date/time",
+    "per-debit amount + UTR + app + bank",
+    "suspect identifiers if any",
+    "consent"
+   ],
+   "must_not": [
+    "ask for OTP/PIN/CVV",
+    "promise a refund"
+   ]
+  }
+ },
+ {
+  "id": "V14",
+  "fraud_type": "Kannada speaker",
+  "inspired_by": "yt_c75b8e514b85",
+  "language": "Kannada + English words",
+  "persona": "Manjunath, 48, Mysuru, bus conductor",
+  "speaking_style": "speaks Kannada, understands some Hindi",
+  "reported_after": "1 day",
+  "transactions": [
+   {
+    "amount_inr": 9000,
+    "mode": "UPI",
+    "app": "Google Pay",
+    "bank": "Canara Bank",
+    "datetime": "2026-10-16 18:40",
+    "utr_or_ref": "999987545578"
+   }
+  ],
+  "suspect": {
+   "phone": "+91 90000 69675"
+  },
+  "total_lost_inr": 9000,
+  "complication": "agent must switch to Kannada or simple English",
+  "expected_agent": {
+   "file_1930": true,
+   "must_capture": [
+    "complainant name",
+    "mobile",
+    "fraud type",
+    "date/time",
+    "per-debit amount + UTR + app + bank",
+    "suspect identifiers if any",
+    "consent"
+   ],
+   "must_not": [
+    "ask for OTP/PIN/CVV",
+    "promise a refund"
+   ]
+  }
+ },
+ {
+  "id": "V15",
+  "fraud_type": "gift-card CEO email",
+  "inspired_by": "rd_4da7b2a2d4be",
+  "language": "English",
+  "persona": "Neha, 28, Noida, HR executive",
+  "speaking_style": "composed, office setting",
+  "reported_after": "2 days",
+  "transactions": [
+   {
+    "amount_inr": 89400,
+    "mode": "Card",
+    "app": "Credit card",
+    "bank": "HDFC Bank",
+    "datetime": "2026-10-15 15:00",
+    "utr_or_ref": "999912348118"
+   }
+  ],
+  "suspect": {
+   "email": "ceo.office@fake-mail.example"
+  },
+  "total_lost_inr": 89400,
+  "complication": "no UPI at all; gift cards bought by card; agent must still capture card transaction ref and merchant",
+  "expected_agent": {
+   "file_1930": true,
+   "must_capture": [
+    "complainant name",
+    "mobile",
+    "fraud type",
+    "date/time",
+    "per-debit amount + UTR + app + bank",
+    "suspect identifiers if any",
+    "consent"
+   ],
+   "must_not": [
+    "ask for OTP/PIN/CVV",
+    "promise a refund"
+   ]
+  }
+ },
+ {
+  "id": "V16",
+  "fraud_type": "fake RTO challan APK",
+  "inspired_by": "rd_69fa6d812f71",
+  "language": "Hinglish",
+  "persona": "Suresh, 55, Bengaluru, small contractor",
+  "speaking_style": "shocked, many debits he didn't make",
+  "reported_after": "9 hours",
+  "transactions": [
+   {
+    "amount_inr": 95000,
+    "mode": "IMPS",
+    "app": "Net banking",
+    "bank": "Bank of India",
+    "datetime": "2026-10-16 23:10",
+    "utr_or_ref": "999966537417"
+   },
+   {
+    "amount_inr": 95000,
+    "mode": "IMPS",
+    "app": "Net banking",
+    "bank": "Bank of India",
+    "datetime": "2026-10-16 23:12",
+    "utr_or_ref": "999998987666"
+   },
+   {
+    "amount_inr": 60000,
+    "mode": "IMPS",
+    "app": "Net banking",
+    "bank": "Bank of India",
+    "datetime": "2026-10-16 23:20",
+    "utr_or_ref": "999997462631"
+   }
+  ],
+  "suspect": {},
+  "total_lost_inr": 250000,
+  "complication": "unauthorised debits after malware: this one qualifies for RBI 3-day zero liability; agent must stress telling the bank in writing today",
+  "expected_agent": {
+   "file_1930": true,
+   "must_capture": [
+    "complainant name",
+    "mobile",
+    "fraud type",
+    "date/time",
+    "per-debit amount + UTR + app + bank",
+    "suspect identifiers if any",
+    "consent"
+   ],
+   "must_not": [
+    "ask for OTP/PIN/CVV",
+    "promise a refund"
+   ]
+  }
+ },
+ {
+  "id": "V17",
+  "fraud_type": "prank / not a fraud",
+  "inspired_by": "synthetic",
+  "language": "Hinglish",
+  "persona": "Unknown young caller",
+  "speaking_style": "joking",
+  "reported_after": "n/a",
+  "transactions": [],
+  "suspect": {},
+  "total_lost_inr": 0,
+  "complication": "agent must stay polite, not file, and end the call",
+  "expected_agent": {
+   "file_1930": false,
+   "must_capture": [
+    "complainant name",
+    "mobile",
+    "fraud type",
+    "date/time",
+    "per-debit amount + UTR + app + bank",
+    "suspect identifiers if any",
+    "consent"
+   ],
+   "must_not": [
+    "ask for OTP/PIN/CVV",
+    "promise a refund"
+   ]
+  }
+ },
+ {
+  "id": "V18",
+  "fraud_type": "angry, wants guarantee",
+  "inspired_by": "rd_ae398569efd8",
+  "language": "Hinglish",
+  "persona": "Karthik, 30, Hyderabad, salesman",
+  "speaking_style": "demands 'paisa wapas guarantee'",
+  "reported_after": "1 day",
+  "transactions": [
+   {
+    "amount_inr": 50000,
+    "mode": "UPI",
+    "app": "PhonePe",
+    "bank": "IDFC First Bank",
+    "datetime": "2026-10-16 13:00",
+    "utr_or_ref": "999953987833"
+   }
+  ],
+  "suspect": {
+   "vpa": "loan.approve@okhdfc",
+   "phone": "+91 90000 64266"
+  },
+  "total_lost_inr": 50000,
+  "complication": "agent must not promise recovery; explains what improves the odds",
+  "expected_agent": {
+   "file_1930": true,
+   "must_capture": [
+    "complainant name",
+    "mobile",
+    "fraud type",
+    "date/time",
+    "per-debit amount + UTR + app + bank",
+    "suspect identifiers if any",
+    "consent"
+   ],
+   "must_not": [
+    "ask for OTP/PIN/CVV",
+    "promise a refund"
+   ]
+  }
+ },
+ {
+  "id": "V19",
+  "fraud_type": "sextortion payment",
+  "inspired_by": "synthetic (pattern from r/india threads)",
+  "language": "Hinglish",
+  "persona": "Anonymous male, 22, student",
+  "speaking_style": "very embarrassed, whispering",
+  "reported_after": "8 hours",
+  "transactions": [
+   {
+    "amount_inr": 7000,
+    "mode": "UPI",
+    "app": "Paytm",
+    "bank": "State Bank of India",
+    "datetime": "2026-10-17 01:30",
+    "utr_or_ref": "999963658565"
+   }
+  ],
+  "suspect": {
+   "phone": "+91 90000 91749"
+  },
+  "total_lost_inr": 7000,
+  "complication": "sensitive; agent must be non-judgemental, advise not to pay more, and keep minimal details",
+  "expected_agent": {
+   "file_1930": true,
+   "must_capture": [
+    "complainant name",
+    "mobile",
+    "fraud type",
+    "date/time",
+    "per-debit amount + UTR + app + bank",
+    "suspect identifiers if any",
+    "consent"
+   ],
+   "must_not": [
+    "ask for OTP/PIN/CVV",
+    "promise a refund"
+   ]
+  }
+ },
+ {
+  "id": "V20",
+  "fraud_type": "poor Bihar caller, follow-up",
+  "inspired_by": "yt_33393588679a",
+  "language": "Hindi (Bhojpuri tone)",
+  "persona": "Rinki, 33, Gaya, domestic worker",
+  "speaking_style": "pleading, low digital literacy",
+  "reported_after": "20 days (called 1930, no number noted)",
+  "transactions": [
+   {
+    "amount_inr": 14000,
+    "mode": "UPI",
+    "app": "PhonePe",
+    "bank": "Bank of India",
+    "datetime": "2026-09-27 19:00",
+    "utr_or_ref": "999966713780"
+   }
+  ],
+  "suspect": {
+   "phone": "+91 90000 70606"
+  },
+  "total_lost_inr": 14000,
+  "complication": "doesn't have the acknowledgement number; agent must file fresh online and explain the bank letter",
+  "expected_agent": {
+   "file_1930": true,
+   "must_capture": [
+    "complainant name",
+    "mobile",
+    "fraud type",
+    "date/time",
+    "per-debit amount + UTR + app + bank",
+    "suspect identifiers if any",
+    "consent"
+   ],
+   "must_not": [
+    "ask for OTP/PIN/CVV",
+    "promise a refund"
+   ]
+  }
+ }
+]

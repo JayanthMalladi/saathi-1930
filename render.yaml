@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: saathi-1930
+    runtime: python
+    rootDir: .
+    buildCommand: pip install -r app/requirements.txt
+    startCommand: cd app && uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: BACKEND_TOKEN
+        generateValue: true
