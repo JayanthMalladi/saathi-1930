@@ -24,7 +24,7 @@ caller ──phone──▶ Bolna (Sarvam STT → gpt-4.1-mini → Sarvam TTS)
 | Telephony | Bolna's default number for outbound calls | No number purchase needed for testing |
 
 ## Budget: $5 free credit
-- Price: from $0.06 per minute with bundled models, plus telephony per minute. **[estimate]** That's roughly 50 to 80 minutes of calls.
+- Price: from $0.06 per minute with bundled models, plus about $0.02/min platform fee and telephony per minute. **[estimate]** That's roughly 50 to 80 minutes of calls.
 - A phone number costs $5/month, the whole credit. **We don't buy one.** Every call is outbound from Bolna's default number: we call ourselves to test, and judges get a "Saathi calls you" button on the demo page instead of a number to dial.
 
 | Phase | What | Spend |
@@ -41,7 +41,14 @@ Check the balance with `python agent/bolna.py me` before each phase. If we run l
 ## Things the docs don't confirm (check on the first real call)
 1. Whether `api_tools` with `tools` + `tools_params` is the right shape for the create-agent API (it's the shape in Bolna's open-source agent config). If the create call rejects it, add the 3 tools in the dashboard's Tools tab instead.
 2. Whether system variables like `execution_id` can be passed into tool params. Until confirmed, the backend attaches tool calls to the call in progress, which is fine for one call at a time.
-3. Whether the dashboard has a free browser test call. If it does, use it for Phase 1 and 2 to save credit.
+3. Whether the free credit can call Indian mobiles from Bolna's default number.
+4. Whether a call transfer to 1930 (a short code) works. If not, the agent tells the caller to dial 1930.
+
+## Other notes from the docs
+- The dashboard's built-in test call has no telephony charge, so we tune the prompt there for free and spend credit only on real phone calls (Phases 1 to 4).
+- An Indian number needs company KYC (CIN and GST), another reason to stay outbound-only.
+- Bolna blocks agents flagged for "scam or fraud-related behaviour". The prompt must read clearly as helping victims report and protect themselves, and never collect OTPs, PINs or passwords. It already does; keep it that way when editing.
+- A 48-hour follow-up call ("did you get your acknowledgement number? did the bank reply?") is the answer to the biggest pain in our evidence. For the demo we trigger it by hand.
 
 ## Schedule
 - **Oct 17 to 19:** deploy backend, create agent, first calls (Phase 0 and 1).
