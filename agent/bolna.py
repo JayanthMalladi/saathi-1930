@@ -93,7 +93,7 @@ def agent_payload():
                         "llm_config": {"provider": "openai", "model": "gpt-4.1-mini", "max_tokens": 200, "temperature": 0.2},
                     },
                     # Sarvam STT/TTS are in Bolna's flat per-minute rate; Kalpa is not listed there
-                    "transcriber": {"provider": "sarvam", "model": "saaras:v4", "language": "hi", "stream": True, "endpointing": 500},
+                    "transcriber": {"provider": "sarvam", "model": "saaras:v4", "language": "hi", "stream": True, "endpointing": 700},
                     "synthesizer": {"provider": "sarvam", "stream": True, "buffer_size": 150,
                                     "provider_config": {"voice": "Priya", "voice_id": "priya", "model": "bulbul:v3", "language": "hi", "speed": 1.0}},
                     "input": {"provider": "plivo", "format": "wav"},
@@ -101,7 +101,10 @@ def agent_payload():
                     "api_tools": {"tools": [{k: v for k, v in t.items() if k != "value"} | {"key": t["key"]} for t in TOOLS],
                                   "tools_params": {t["name"]: t["value"] for t in TOOLS}},
                 },
-                "task_config": {"call_terminate": 480, "hangup_after_silence": 20},
+                # callers pause mid-story and while reading UTRs: wait ~1.2 s of silence before replying,
+                # and treat a 1-word sound ("haan", "hmm") as backchannel, not an interruption
+                "task_config": {"call_terminate": 480, "hangup_after_silence": 20, "incremental_delay": 1200,
+                                "number_of_words_for_interruption": 2, "backchanneling": True},
             }],
         },
         "agent_prompts": {"task_1": {"system_prompt": (HERE / "system_prompt.txt").read_text(encoding="utf-8")}},
