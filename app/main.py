@@ -192,6 +192,11 @@ async def bank_action(cid: str, req: Request):
     return {"ok": True}
 
 
+@app.get("/health")
+def health():
+    return {"ok": True, "cases": len(cases)}
+
+
 @app.get("/")
 @app.get("/case/{cid}")
 def case_page(cid: str = "latest"):
