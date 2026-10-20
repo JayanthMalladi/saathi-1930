@@ -30,3 +30,8 @@ python agent/bolna.py agent --dry-run
 python agent/bolna.py agent
 python agent/bolna.py call +91XXXXXXXXXX
 ```
+
+## Simulated test calls
+An LLM plays each of the 20 synthetic victims in `test_calls/callers.json` against the agent's prompt and tools (same model as the Bolna agent), and each run is scored: UTRs and amounts captured, right route, no OTP request or refund promise, the special case handled, caller not cut off. It tests the conversation logic, not the voice layer.
+
+Set `OPENAI_API_KEY` on the server, then open `/admin/simulate?token=<BACKEND_TOKEN>` (all 20) or add `&ids=V01,V08`. The report page refreshes until the run is done.

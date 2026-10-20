@@ -13,7 +13,8 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 from fastapi import FastAPI, Header, HTTPException, Request
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
+from html import escape
 from fastapi.staticfiles import StaticFiles
 
 HERE = Path(__file__).resolve().parent
@@ -22,6 +23,7 @@ TOKEN = os.environ.get("BACKEND_TOKEN")  # Bolna sends this as its api_token; un
 CALLERS = HERE.parent / "test_calls" / "callers.json"
 sys.path.insert(0, str(HERE.parent / "agent"))
 import bolna  # noqa: E402  (agent config and Bolna API helper, shared with the CLI)
+import simulate  # noqa: E402
 
 app = FastAPI(title="Saathi 1930 backend")
 app.mount("/static", StaticFiles(directory=HERE / "static"), name="static")
@@ -251,6 +253,43 @@ async def call_me(req: Request):
 @app.get("/call")
 def call_page():
     return FileResponse(HERE / "static" / "call.html")
+
+
+@app.get("/admin/simulate")
+def start_simulation(token: str | None = None, ids: str = ""):
+    """Run text simulations of the synthetic callers (all, or ?ids=V01,V08). Needs OPENAI_API_KEY on the server."""
+    if not TOKEN or token != TOKEN:
+        raise HTTPException(401, "bad token")
+    if not os.environ.get("OPENAI_API_KEY"):
+        raise HTTPException(500, "OPENAI_API_KEY is not set on the server")
+    rid = simulate.start([i.strip() for i in ids.split(",") if i.strip()], f"http://127.0.0.1:{os.environ.get('PORT', '8000')}", TOKEN)
+    return HTMLResponse(f'<meta http-equiv="refresh" content="0;url=/admin/sim/{rid}?token={escape(token)}">')
+
+
+@app.get("/admin/sim/{rid}")
+def simulation_report(rid: str, token: str | None = None):
+    if not TOKEN or token != TOKEN:
+        raise HTTPException(401, "bad token")
+    run = simulate.runs.get(rid)
+    if not run:
+        raise HTTPException(404, "no such run (runs are lost when the server restarts)")
+    res = run["results"]
+    rows = "".join(
+        f"<tr><td>{escape(r['id'])}</td><td>{escape(r['fraud_type'])}</td>"
+        f"<td><span class='pill {'ok' if r.get('passed') else 'bad'}'>{'pass' if r.get('passed') else 'fail'}</span></td>"
+        f"<td>{escape(str(r.get('utrs', '')))}</td><td>{'✓' if r.get('route_ok') else '✗'}</td>"
+        f"<td>{'✗' if r.get('asked_for_secret') or r.get('promised_refund') else '✓'}</td>"
+        f"<td>{'✓' if r.get('handled_special') else '✗'}</td><td>{'✗' if r.get('cut_caller_off') else '✓'}</td>"
+        f"<td>{escape(r.get('note') or r.get('error') or '')}"
+        + (f"<details><summary>transcript</summary>{''.join(f'<p><b>{escape(w)}:</b> {escape(t)}</p>' for w, t in r['transcript'])}</details>" if r.get('transcript') else "")
+        + "</td></tr>" for r in res)
+    passed = sum(1 for r in res if r.get("passed"))
+    refresh = '<meta http-equiv="refresh" content="10">' if run["status"] == "running" else ""
+    return HTMLResponse(f"""<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">{refresh}
+<title>Simulation {escape(rid)}</title><link rel="stylesheet" href="/static/style.css"></head><body>
+<header><h1>Simulated test calls · {escape(rid)}</h1><span>{escape(run['status'])}: {len(res)}/{run['total']} done · {passed} passed</span></header>
+<main><div class="card" style="overflow-x:auto"><table><thead><tr><th>Caller</th><th>Type</th><th>Result</th><th>UTRs</th><th>Route</th><th>Safety</th><th>Special case</th><th>Let caller finish</th><th>Notes</th></tr></thead>
+<tbody>{rows}</tbody></table></div></main></body></html>""")
 
 
 @app.get("/health")
