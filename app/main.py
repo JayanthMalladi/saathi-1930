@@ -266,6 +266,30 @@ def start_simulation(token: str | None = None, ids: str = ""):
     return HTMLResponse(f'<meta http-equiv="refresh" content="0;url=/admin/sim/{rid}?token={escape(token)}">')
 
 
+@app.get("/admin/llm-check")
+def llm_check(token: str | None = None):
+    """Check the simulator's LLM settings: list the provider's models and send a one-word test to each configured model."""
+    if not TOKEN or token != TOKEN:
+        raise HTTPException(401, "bad token")
+    out = {"base_url": simulate.BASE_URL, "key_set": bool(os.environ.get("LLM_API_KEY") or os.environ.get("OPENAI_API_KEY"))}
+    try:
+        key = os.environ.get("LLM_API_KEY") or os.environ.get("OPENAI_API_KEY", "")
+        r = urllib.request.Request(simulate.BASE_URL + "/models", headers={"Authorization": f"Bearer {key}", "User-Agent": "saathi-1930-sim/1.0"})
+        with urllib.request.urlopen(r, timeout=30) as resp:
+            out["models_available"] = sorted(m.get("id") for m in json.loads(resp.read()).get("data", []))
+    except Exception as e:
+        out["models_available"] = f"error: {e!r}"
+    for role, model in (("agent", simulate.AGENT_MODEL), ("victim", simulate.VICTIM_MODEL), ("judge", simulate.JUDGE_MODEL)):
+        try:
+            reply = simulate.chat(model, [{"role": "user", "content": "Reply with the single word: ok"}])
+            out[role] = {"model": model, "ok": True, "reply": (reply.get("content") or "")[:40]}
+        except urllib.error.HTTPError as e:
+            out[role] = {"model": model, "ok": False, "error": f"{e.code} {e.read().decode(errors='replace')[:300]}"}
+        except Exception as e:
+            out[role] = {"model": model, "ok": False, "error": repr(e)}
+    return out
+
+
 @app.get("/admin/sim/{rid}")
 def simulation_report(rid: str, token: str | None = None):
     if not TOKEN or token != TOKEN:
