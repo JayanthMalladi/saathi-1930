@@ -89,16 +89,14 @@ HELPLINE_CONTEXT = "a helpline callback: the caller asked Saathi to call them ab
 LANGS = {
     "hi": {"name": "Hindi",
            "rule": 'Speak Hinglish (everyday Hindi in Roman script, with common English words) for the whole call. Short replies like "haan", "ha", "ok" or "yes" are not a language change: keep speaking Hindi. Switch to English only if the caller asks for it or keeps speaking full English sentences.',
-           "helpline_opening": "Namaste, main Saathi hoon, ek AI helper. Aap safe hain. Kya aapke saath abhi koi online fraud hua hai?",
-           "goodbye": "Dhanyavaad. Apna dhyan rakhiye."},
+           "helpline_opening": "Namaste, main Saathi hoon, ek AI helper. Aap safe hain. Kya aapke saath abhi koi online fraud hua hai?"},
     "en": {"name": "English",
            "rule": "Speak simple Indian English for the whole call. Switch to Hindi only if the caller asks for it or keeps speaking full Hindi sentences.",
-           "helpline_opening": "Hello, I'm Saathi, an AI helper. You're safe now. Has an online fraud just happened to you?",
-           "goodbye": "Thank you. Please take care."},
+           "helpline_opening": "Hello, I'm Saathi, an AI helper. You're safe now. Has an online fraud just happened to you?"},
 }
 HELPLINE_OPENING = LANGS["hi"]["helpline_opening"]
-# when the language isn't known before the call, the first line asks for it
-LANGUAGE_MENU = "For English, press 1. Hindi ke liye, 2 dabaiye."
+# when the language isn't known before the call, the first line asks for it (by voice: keypad input didn't reach the agent)
+LANGUAGE_MENU = "Aap Hindi mein baat karna chahenge, ya English mein?"
 
 
 def prompt_for(lang: str) -> str:
@@ -149,11 +147,11 @@ def agent_payload():
                 # and treat a 1-word sound ("haan", "hmm") as backchannel, not an interruption
                 "task_config": {"call_terminate": 480, "hangup_after_silence": 20, "incremental_delay": 1200,
                                 "number_of_words_for_interruption": 2, "backchanneling": True,
-                                "dtmf_enabled": True,  # keypad 1 / 2 picks the language when we don't know it
                                 # let the LLM end the call once the conversation is over
                                 "hangup_after_LLMCall": True,
                                 "call_cancellation_prompt": "End the call if Saathi has said goodbye, or the customer confirmed they made the flagged payment and was thanked, or the next steps were given and the caller has no more questions, or it was a prank call that Saathi closed.",
-                                "call_hangup_message": {k: v["goodbye"] for k, v in LANGS.items()}},
+                                # the prompt already says goodbye; a hang-up message on top made it say goodbye twice
+                                "call_hangup_message": None, "dtmf_enabled": False},
             }],
         },
         "agent_prompts": {"task_1": {"system_prompt": prompt_for("hi")}},
