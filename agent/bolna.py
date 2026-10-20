@@ -134,9 +134,10 @@ def agent_payload():
                                 "number_of_words_for_interruption": 2, "backchanneling": True,
                                 # let the LLM end the call once the conversation is over
                                 "hangup_after_LLMCall": True,
-                                "call_cancellation_prompt": "End the call if Saathi has said goodbye, or the customer confirmed they made the flagged payment and was thanked, or the next steps were given and the caller has no more questions, or it was a prank call that Saathi closed.",
-                                # the prompt already says goodbye; a hang-up message on top made it say goodbye twice
-                                "call_hangup_message": None, "dtmf_enabled": False},
+                                "call_cancellation_prompt": "End the call if the customer confirmed they made the flagged payment and was thanked, or the next steps were given and the caller has no more questions, or it was a prank call that Saathi closed.",
+                                # Bolna only hung up when a hang-up message was set, so the goodbye lives here
+                                # and the prompt tells the agent not to say its own (that played twice)
+                                "call_hangup_message": "Dhanyavaad. Thank you, take care.", "dtmf_enabled": False},
             }],
         },
         "agent_prompts": {"task_1": {"system_prompt": prompt()}},
