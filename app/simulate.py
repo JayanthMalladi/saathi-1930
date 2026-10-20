@@ -22,8 +22,9 @@ import bolna
 
 HERE = Path(__file__).resolve().parent
 CALLERS = json.loads((HERE.parent / "test_calls" / "callers.json").read_text(encoding="utf-8"))
-PROMPT = (HERE.parent / "agent" / "system_prompt.txt").read_text(encoding="utf-8")
-WELCOME = bolna.agent_payload()["agent_config"]["agent_welcome_message"]
+# simulated calls are helpline callbacks, so fill the per-call variables the way /api/call-me does
+PROMPT = (HERE.parent / "agent" / "system_prompt.txt").read_text(encoding="utf-8").replace("{call_context}", bolna.HELPLINE_CONTEXT)
+WELCOME = bolna.HELPLINE_OPENING
 BASE_URL = os.environ.get("LLM_BASE_URL", "https://api.openai.com/v1").rstrip("/")
 AGENT_MODEL = os.environ.get("SIM_AGENT_MODEL", "gpt-4.1-mini")
 VICTIM_MODEL = os.environ.get("SIM_VICTIM_MODEL", AGENT_MODEL)

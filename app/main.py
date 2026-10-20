@@ -29,7 +29,7 @@ app = FastAPI(title="Saathi 1930 backend")
 app.mount("/static", StaticFiles(directory=HERE / "static"), name="static")
 cases: dict[str, dict] = json.loads(STORE.read_text()) if STORE.exists() else {}
 latest_id: str | None = max(cases, key=lambda k: cases[k]["created_at"]) if cases else None
-last_dialled: str | None = None  # Saathi calls the caller, so the number it dialled is the caller's mobile
+ORG = os.environ.get("ORG_NAME", "Demo Wallet")  # the made-up fintech whose fraud team uses Saathi in the demo
 
 
 def save():
@@ -50,17 +50,29 @@ def blank(v):
     return v in (None, "", "None", "null")
 
 
+def new_case(cid: str, **extra) -> dict:
+    global latest_id
+    cases[cid] = {"id": cid, "created_at": now(), "status": "in_call", "consent": None,
+                  "transactions": [], "complaint": {}, "extracted": {}, "events": [], **extra}
+    latest_id = cid
+    return cases[cid]
+
+
 def case_for(body: dict) -> dict:
     """Find the case for this call; Bolna's call id field name is not confirmed yet, so accept several."""
     global latest_id
-    cid = next((str(body[k]) for k in ("call_sid", "execution_id", "call_id") if not blank(body.get(k))), None)
+    ids = {str(body[k]) for k in ("call_sid", "execution_id", "call_id", "id") if not blank(body.get(k))}
+    cid = next((k for k, c in cases.items() if k in ids or c.get("execution_id") in ids), None)
+    if cid is None and latest_id and cases[latest_id]["status"] in ("in_call", "alert_calling"):
+        cid = latest_id  # tool calls carry no call id: they belong to the call in progress
     if cid is None:
-        cid = latest_id if latest_id and cases[latest_id]["status"] == "in_call" else f"demo-{datetime.now():%H%M%S}"
-    if cid not in cases:
-        cases[cid] = {"id": cid, "created_at": now(), "status": "in_call", "consent": None,
-                      "transactions": [], "complaint": {}, "extracted": {}, "events": [], "caller_phone": last_dialled}
+        return new_case(next(iter(ids), f"demo-{datetime.now():%H%M%S}"))
     latest_id = cid
     return cases[cid]
+
+
+def log(c: dict, what: str):
+    c["events"].append([now(), what])
 
 
 def check_utr(mode: str, ref: str) -> str | None:
@@ -92,7 +104,16 @@ def priority(c: dict) -> dict:
     wd = working_days_since(min(times)) if times else None
     fresh = 3 if wd is not None and wd == 0 else 2 if wd is not None and wd <= 3 else 1
     window = None if wd is None else "within 3 working days" if wd <= 3 else "4 to 7 working days" if wd <= 7 else "after 7 working days"
-    return {"total_inr": total, "working_days": wd, "rbi_window": window, "score": round(total * fresh / 1000, 1)}
+    fraud_at = (c.get("alert") or {}).get("debit_at") or (min(times).replace(" ", "T") if times else c["created_at"])
+    return {"total_inr": total, "working_days": wd, "rbi_window": window, "score": round(total * fresh / 1000, 1), "fraud_at": fraud_at}
+
+
+def sms_text(c: dict) -> str:
+    p, k = priority(c), c["complaint"]
+    utrs = ", ".join(t["utr_or_ref"] for t in c["transactions"] if t.get("utr_or_ref")) or "not given"
+    return (f"Saathi: your fraud report {c['id']} is ready. Total Rs {p['total_inr']:,.0f}. Transaction no.: {utrs}. "
+            f"1) Call 1930 or file at cybercrime.gov.in with these details. 2) Tell your bank in writing today and keep the complaint no. "
+            f"3) Keep screenshots. Never share OTP/PIN. Anyone asking a fee to recover money is a scammer.")
 
 
 @app.post("/api/consent")
@@ -102,7 +123,7 @@ async def consent(req: Request, authorization: str | None = Header(None)):
     c = case_for(b)
     c["consent"] = {"caller_name": b.get("caller_name"), "is_account_holder": str(b.get("is_account_holder")).lower() in ("true", "1", "yes"),
                     "account_holder_name": None if blank(b.get("account_holder_name")) else b["account_holder_name"], "at": now()}
-    c["events"].append([now(), "consent recorded"])
+    log(c, "consent recorded")
     save()
     return {"ok": True, "message": "Consent noted. Continue collecting details."}
 
@@ -120,7 +141,7 @@ async def transaction(req: Request, authorization: str | None = Header(None)):
          "app": b.get("app"), "bank": b.get("bank"), "datetime": None if blank(b.get("datetime")) else b["datetime"]}
     t["utr_issue"] = check_utr(t["mode"], t["utr_or_ref"])
     c["transactions"].append(t)
-    c["events"].append([now(), f"debit Rs {amount:,.0f} added"])
+    log(c, f"debit Rs {amount:,.0f} added")
     save()
     if t["utr_issue"]:
         return {"ok": True, "message": f"Saved, but check the UTR: {t['utr_issue']}. Ask which label it had on the screen."}
@@ -134,15 +155,33 @@ async def submit(req: Request, authorization: str | None = Header(None)):
     c = case_for(b)
     c["complaint"] = {k: (None if blank(v) else v) for k, v in b.items() if k not in ("call_sid", "execution_id", "call_id")}
     if len(re.sub(r"\D", "", c["complaint"].get("mobile") or "")) < 10 and c.get("caller_phone"):
-        c["complaint"]["mobile"] = c["caller_phone"]
+        c["complaint"]["mobile"] = c["caller_phone"]  # Saathi dialled the caller, so we already have their number
     c["status"] = "submitted"
     c["submitted_at"] = now()
-    c["events"].append([now(), "complaint ready, sent to bank queue"])
+    log(c, "complaint ready, sent to bank queue")
+    c["sms"] = sms_text(c)
+    log(c, "SMS summary sent to the caller (mock)")
     save()
     p = priority(c)
     missing = [i for i, t in enumerate(c["transactions"], 1) if t["utr_issue"]]
     note = f" UTR still needs checking for debit {', '.join(map(str, missing))}." if missing else ""
     return {"ok": True, "case_id": c["id"], "message": f"Complaint ready, total Rs {p['total_inr']:,.0f}, reported {p['rbi_window'] or 'date unknown'}.{note} Tell the caller the next steps."}
+
+
+@app.post("/api/alert-answer")
+async def alert_answer(req: Request, authorization: str | None = Header(None)):
+    auth(authorization)
+    b = await req.json()
+    c = case_for(b)
+    made = str(b.get("customer_made_payment")).lower() in ("true", "1", "yes")
+    c.setdefault("alert", {})["answer"] = "customer made it" if made else "NOT the customer"
+    c["alert"]["answered_at"] = now()
+    c["status"] = "cleared" if made else "in_call"
+    log(c, f"customer says: {'I made this payment' if made else 'this was not me'}" + ("" if blank(b.get("note")) else f" ({b['note']})"))
+    save()
+    if made:
+        return {"ok": True, "message": "Marked as genuine. Thank the customer and end the call."}
+    return {"ok": True, "message": "Marked as fraud; the flagged debit is already on the case. Start the fraud intake (consent first)."}
 
 
 @app.post("/api/bolna/webhook")
@@ -154,7 +193,9 @@ async def bolna_webhook(req: Request):
     c["transcript"] = b.get("transcript") or c.get("transcript")
     if c["status"] == "in_call":
         c["status"] = "call_ended"
-    c["events"].append([now(), "call ended"])
+    elif c["status"] == "alert_calling":
+        c["status"] = "no_answer"
+    log(c, "call ended")
     save()
     return {"ok": True}
 
@@ -245,14 +286,70 @@ async def call_me(req: Request):
     """Saathi calls the given number. Token-protected for now so nobody spends the credit."""
     b = await req.json()
     admin(b.get("token"))
-    phone = re.sub(r"[^\d+]", "", b.get("phone") or "")
+    phone = check_phone(b.get("phone"))
+    c = new_case(f"call-{datetime.now():%m%d-%H%M%S}", caller_phone=phone, mode="helpline")
+    log(c, "caller asked for a call back; Saathi calling")
+    return place_call(c, {"opening": bolna.HELPLINE_OPENING, "call_context": bolna.HELPLINE_CONTEXT})
+
+
+def check_phone(raw: str | None) -> str:
+    phone = re.sub(r"[^\d+]", "", raw or "")
     if not re.fullmatch(r"\+91\d{10}", phone):
         raise HTTPException(400, "Use an Indian mobile in the form +91XXXXXXXXXX")
     if not os.environ.get("BOLNA_AGENT_ID"):
         raise HTTPException(500, "BOLNA_AGENT_ID is not set yet")
-    global last_dialled
-    last_dialled = phone
-    return bolna_call("POST", "/call", {"agent_id": os.environ["BOLNA_AGENT_ID"], "recipient_phone_number": phone})
+    return phone
+
+
+def place_call(c: dict, user_data: dict):
+    """Ask Bolna to dial the case's number; user_data fills {opening} and {call_context} in the agent."""
+    out = bolna_call("POST", "/call", {"agent_id": os.environ["BOLNA_AGENT_ID"], "recipient_phone_number": c["caller_phone"], "user_data": user_data})
+    if isinstance(out, dict):
+        c["execution_id"] = out.get("execution_id") or out.get("id")
+    else:
+        c["status"] = "call_failed"
+        log(c, "call could not be placed")
+    save()
+    return out
+
+
+@app.post("/api/alert-call")
+async def alert_call(req: Request):
+    """Demo of the fintech flow: the fraud team flags a debit and Saathi calls the customer to ask "was this you?"."""
+    b = await req.json()
+    admin(b.get("token"))
+    phone = check_phone(b.get("phone"))
+    try:
+        amount = float(str(b.get("amount")).replace(",", ""))
+    except ValueError:
+        raise HTTPException(400, "amount must be a number")
+    name = (b.get("name") or "").strip()[:40] or "customer"
+    payee = (b.get("payee") or "").strip()[:60] or "an unknown UPI ID"
+    at = datetime.now()
+    utr = f"9999{at:%d%H%M%S}"  # mock bank-side UTR; the 9999 prefix marks it as fake
+    alert = {"amount_inr": amount, "payee": payee, "debit_at": at.isoformat(timespec="seconds"), "utr": utr, "answer": None}
+    c = new_case(f"alert-{at:%m%d-%H%M%S}", caller_phone=phone, mode="alert", status="alert_calling", alert=alert,
+                 consent=None, complaint={"suspect_vpa_or_account": payee},
+                 transactions=[{"amount_inr": amount, "mode": "UPI", "utr_or_ref": utr, "app": ORG, "bank": ORG,
+                                "datetime": f"{at:%Y-%m-%d %H:%M}", "utr_issue": None}])
+    log(c, f"debit of Rs {amount:,.0f} to {payee} flagged as suspicious; Saathi calling the customer")
+    opening = (f"Namaste {name}, main Saathi hoon, {ORG} ki AI fraud assistant. Abhi aapke account se {amount:,.0f} rupaye "
+               f"ek naye UPI ID par gaye hain. Kya yeh payment aapne khud kiya tha?")
+    context = (f"an alert call from {ORG}'s fraud team. The customer, {name}, was just debited Rs {amount:,.0f} by UPI to {payee} "
+               f"at {at:%H:%M} today from their {ORG} account, and the payment was flagged as suspicious.")
+    return place_call(c, {"opening": opening, "call_context": context})
+
+
+@app.get("/api/cases/{cid}/audit")
+def audit(cid: str):
+    """Everything that happened on a case, with timestamps, as a file the bank's compliance team can keep."""
+    if cid not in cases:
+        raise HTTPException(404)
+    c = cases[cid]
+    keep = ("id", "mode", "created_at", "submitted_at", "status", "caller_phone", "execution_id", "alert", "consent",
+            "transactions", "complaint", "sms", "bank_actions", "events")
+    body = {"exported_at": now(), "organisation": ORG, **{k: c.get(k) for k in keep}, "priority": priority(c)}
+    return JSONResponse(body, headers={"Content-Disposition": f'attachment; filename="saathi-audit-{cid}.json"'})
 
 
 @app.get("/call")

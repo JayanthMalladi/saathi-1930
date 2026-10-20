@@ -73,7 +73,17 @@ TOOLS = [
          {"mobile": S, "fraud_type": S, "incident_datetime": S, "description": S,
           "suspect_phone": S, "suspect_vpa_or_account": S, "language": S},
          ["fraud_type", "description"], "/api/submit", "Ek second, aapki complaint tayyar kar rahi hoon."),
+    tool("confirm_alert",
+         "Alert calls only: call once the customer says whether they made the flagged payment themselves.",
+         {"customer_made_payment": {"type": "boolean"},
+          "note": {"type": "string", "description": "What the customer said, in a few words"}},
+         ["customer_made_payment"], "/api/alert-answer"),
 ]
+
+# Every call is placed with user_data filling these (see app/main.py): {opening} is the first line Saathi says,
+# {call_context} tells the prompt whether this is a helpline callback or a suspicious-debit alert.
+HELPLINE_OPENING = "Namaste, main Saathi hoon, ek AI helper. Aap safe hain. Kya aapke saath abhi koi online fraud hua hai?"
+HELPLINE_CONTEXT = "a helpline callback: the caller asked Saathi to call them about a fraud."
 
 
 def agent_payload():
@@ -81,7 +91,7 @@ def agent_payload():
     return {
         "agent_config": {
             "agent_name": "Saathi 1930",
-            "agent_welcome_message": "Namaste, main Saathi hoon, ek AI helper. Aap safe hain. Kya aapke saath abhi koi online fraud hua hai?",
+            "agent_welcome_message": "{opening}",
             "webhook_url": backend + "/api/bolna/webhook",
             "tasks": [{
                 "task_type": "conversation",
@@ -126,7 +136,8 @@ def main():
             ID_FILE.write_text(out["agent_id"])
             print(out)
     elif cmd == "call":
-        print(req("POST", "/call", {"agent_id": ID_FILE.read_text().strip(), "recipient_phone_number": sys.argv[2]}))
+        print(req("POST", "/call", {"agent_id": ID_FILE.read_text().strip(), "recipient_phone_number": sys.argv[2],
+                                    "user_data": {"opening": HELPLINE_OPENING, "call_context": HELPLINE_CONTEXT}}))
     elif cmd == "result":
         e = req("GET", f"/executions/{sys.argv[2]}")
         print(json.dumps({k: e.get(k) for k in ("status", "conversation_duration", "total_cost", "transcript", "extracted_data")},
