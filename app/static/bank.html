@@ -9,6 +9,7 @@
 <input name="phone" placeholder="+91 98XXXXXXXX" required>
 <input name="amount" placeholder="Amount ₹" inputmode="numeric" required>
 <input name="payee" placeholder="Payee UPI ID">
+<select name="language"><option value="hi">Hindi</option><option value="en">English</option></select>
 <button>Flag &amp; call customer</button></form>
 <p id="msg" class="empty"></p></div>
 <div class="card" style="overflow-x:auto"><table><thead><tr><th>Since fraud</th><th>Customer</th><th>"Was this you?"</th><th>Total</th><th>RBI window</th><th>Debits</th><th>UTRs</th><th></th></tr></thead><tbody id="q"></tbody></table></div>
@@ -18,7 +19,7 @@ const key = new URLSearchParams(location.search).get('key');
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 fetch('/api/config').then(r => r.json()).then(j => document.querySelectorAll('.org').forEach(e => e.textContent = j.org));
 const STATUS = {in_call: ['warn live', '● On call'], alert_calling: ['warn live', '● Calling'], submitted: ['ok', 'Case ready'],
-  call_ended: ['warn', 'Call ended'], cleared: ['ok', 'Genuine'], no_answer: ['bad', 'No answer'], call_failed: ['bad', 'Call failed']};
+  call_ended: ['warn', 'Call ended'], ended_no_reply: ['bad', 'Hung up, no reply'], cleared: ['ok', 'Genuine'], no_answer: ['bad', 'No answer'], call_failed: ['bad', 'Call failed']};
 const ANSWER = a => !a ? '<span class="empty">—</span>' : a === 'customer made it' ? '<span class="pill ok">Yes, it was me</span>' : '<span class="pill bad">No, not me</span>';
 function since(iso, c) {
   // the clock stops when the case is ready or cleared

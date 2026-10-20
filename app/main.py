@@ -190,18 +190,28 @@ async def alert_answer(req: Request, authorization: str | None = Header(None)):
 
 @app.post("/api/bolna/webhook")
 async def bolna_webhook(req: Request):
-    """Bolna post-call webhook: attach transcript and extractions to the case."""
+    """Bolna execution webhook. It fires on every status change (queued, ringing, in-progress, ...), not only at the end."""
     b = await req.json()
     c = case_for(b)
+    st = str(b.get("status") or "").lower()
     c["extracted"] = b.get("extracted_data") or c["extracted"]
     c["transcript"] = b.get("transcript") or c.get("transcript")
-    if c["status"] == "in_call":
-        c["status"] = "call_ended"
-    elif c["status"] == "alert_calling":
+    if st and st != c.get("call_status"):
+        c["call_status"] = st
+        log(c, f"call status: {st}")
+    if st in NOT_ANSWERED and c["status"] in ("in_call", "alert_calling"):
         c["status"] = "no_answer"
-    log(c, "call ended")
+    elif st in ENDED:
+        if c["status"] == "in_call":
+            c["status"] = "call_ended"
+        elif c["status"] == "alert_calling":
+            c["status"] = "ended_no_reply"  # picked up, but never said yes or no
     save()
     return {"ok": True}
+
+
+NOT_ANSWERED = {"no-answer", "busy", "failed", "canceled", "cancelled", "balance-low", "error"}
+ENDED = {"completed", "call-disconnected", "stopped"}
 
 
 @app.post("/api/demo/{caller_id}")
@@ -295,10 +305,17 @@ async def call_me(req: Request):
     """Saathi calls the given number. Token-protected for now so nobody spends the credit."""
     b = await req.json()
     admin(b.get("token"))
-    phone = check_phone(b.get("phone"))
-    c = new_case(f"call-{datetime.now():%m%d-%H%M%S}", caller_phone=phone, mode="helpline")
-    log(c, "caller asked for a call back; Saathi calling")
-    return place_call(c, {"opening": bolna.HELPLINE_OPENING, "call_context": bolna.HELPLINE_CONTEXT})
+    phone, lang = check_phone(b.get("phone")), check_lang(b.get("language"))
+    c = new_case(f"call-{datetime.now():%m%d-%H%M%S}", caller_phone=phone, mode="helpline", language=lang)
+    log(c, f"caller asked for a call back in {bolna.LANGS[lang]['name']}; Saathi calling")
+    return place_call(c, {"opening": bolna.LANGS[lang]["helpline_opening"], "call_context": bolna.HELPLINE_CONTEXT})
+
+
+def check_lang(raw: str | None) -> str:
+    lang = (raw or "hi").lower()
+    if lang not in bolna.LANGS:
+        raise HTTPException(400, f"language must be one of {', '.join(bolna.LANGS)}")
+    return lang
 
 
 def check_phone(raw: str | None) -> str:
@@ -312,7 +329,8 @@ def check_phone(raw: str | None) -> str:
 
 def place_call(c: dict, user_data: dict):
     """Ask Bolna to dial the case's number; user_data fills {opening} and {call_context} in the agent."""
-    out = bolna_call("POST", "/call", {"agent_id": os.environ["BOLNA_AGENT_ID"], "recipient_phone_number": c["caller_phone"], "user_data": user_data})
+    out = bolna_call("POST", "/call", {"agent_id": os.environ["BOLNA_AGENT_ID"], "recipient_phone_number": c["caller_phone"],
+                                       "user_data": user_data, "agent_data": {"language": c.get("language", "hi")}})
     if isinstance(out, dict):
         c["execution_id"] = out.get("execution_id") or out.get("id")
     else:
@@ -327,7 +345,7 @@ async def alert_call(req: Request):
     """Demo of the fintech flow: the fraud team flags a debit and Saathi calls the customer to ask "was this you?"."""
     b = await req.json()
     admin(b.get("token"))
-    phone = check_phone(b.get("phone"))
+    phone, lang = check_phone(b.get("phone")), check_lang(b.get("language"))
     try:
         amount = float(str(b.get("amount")).replace(",", ""))
     except ValueError:
@@ -337,13 +355,15 @@ async def alert_call(req: Request):
     at = datetime.now()
     utr = f"9999{at:%d%H%M%S}"  # mock bank-side UTR; the 9999 prefix marks it as fake
     alert = {"name": name, "amount_inr": amount, "payee": payee, "debit_at": at.isoformat(timespec="seconds"), "utr": utr, "answer": None}
-    c = new_case(f"alert-{at:%m%d-%H%M%S}", caller_phone=phone, mode="alert", status="alert_calling", alert=alert,
+    c = new_case(f"alert-{at:%m%d-%H%M%S}", caller_phone=phone, mode="alert", language=lang, status="alert_calling", alert=alert,
                  consent=None, complaint={"suspect_vpa_or_account": payee},
                  transactions=[{"amount_inr": amount, "mode": "UPI", "utr_or_ref": utr, "app": ORG, "bank": ORG,
                                 "datetime": f"{at:%Y-%m-%d %H:%M}", "utr_issue": None}])
     log(c, f"debit of Rs {amount:,.0f} to {payee} flagged as suspicious; Saathi calling the customer")
     opening = (f"Namaste {name}, main Saathi hoon, {ORG} ki AI fraud assistant. Abhi aapke account se {amount:,.0f} rupaye "
-               f"ek naye UPI ID par gaye hain. Kya yeh payment aapne khud kiya tha?")
+               f"ek naye UPI ID par gaye hain. Kya yeh payment aapne khud kiya tha?") if lang == "hi" else (
+               f"Hello {name}, this is Saathi, {ORG}'s AI fraud assistant. {amount:,.0f} rupees just went from your account "
+               f"to a new UPI ID. Did you make this payment yourself?")
     context = (f"an alert call from {ORG}'s fraud team. The customer, {name}, was just debited Rs {amount:,.0f} by UPI to {payee} "
                f"at {at:%H:%M} today from their {ORG} account, and the payment was flagged as suspicious.")
     return place_call(c, {"opening": opening, "call_context": context})

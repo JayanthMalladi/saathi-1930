@@ -82,8 +82,34 @@ TOOLS = [
 
 # Every call is placed with user_data filling these (see app/main.py): {opening} is the first line Saathi says,
 # {call_context} tells the prompt whether this is a helpline callback or a suspicious-debit alert.
-HELPLINE_OPENING = "Namaste, main Saathi hoon, ek AI helper. Aap safe hain. Kya aapke saath abhi koi online fraud hua hai?"
 HELPLINE_CONTEXT = "a helpline callback: the caller asked Saathi to call them about a fraud."
+
+# Languages the caller can pick before the call. Each gets its own transcriber, voice and prompt line;
+# the call starts in the picked one (agent_data.language) and the agent can still switch if the caller asks.
+LANGS = {
+    "hi": {"name": "Hindi",
+           "rule": 'Speak Hinglish (everyday Hindi in Roman script, with common English words) for the whole call. Short replies like "haan", "ha", "ok" or "yes" are not a language change: keep speaking Hindi. Switch to English only if the caller asks for it or keeps speaking full English sentences.',
+           "helpline_opening": "Namaste, main Saathi hoon, ek AI helper. Aap safe hain. Kya aapke saath abhi koi online fraud hua hai?",
+           "goodbye": "Dhanyavaad. Apna dhyan rakhiye."},
+    "en": {"name": "English",
+           "rule": "Speak simple Indian English for the whole call. Switch to Hindi only if the caller asks for it or keeps speaking full Hindi sentences.",
+           "helpline_opening": "Hello, I'm Saathi, an AI helper. You're safe now. Has an online fraud just happened to you?",
+           "goodbye": "Thank you. Please take care."},
+}
+HELPLINE_OPENING = LANGS["hi"]["helpline_opening"]
+
+
+def prompt_for(lang: str) -> str:
+    return (HERE / "system_prompt.txt").read_text(encoding="utf-8").replace("LANGUAGE_RULE", LANGS[lang]["rule"])
+
+
+def transcriber(lang):
+    return {"provider": "sarvam", "model": "saaras:v4", "language": lang, "stream": True, "endpointing": 700}
+
+
+def synthesizer(lang):
+    return {"provider": "sarvam", "stream": True, "buffer_size": 150,
+            "provider_config": {"voice": "Priya", "voice_id": "priya", "model": "bulbul:v3", "language": lang, "speed": 1.0}}
 
 
 def agent_payload():
@@ -103,9 +129,13 @@ def agent_payload():
                         "llm_config": {"provider": "openai", "model": "gpt-4.1-mini", "max_tokens": 200, "temperature": 0.2},
                     },
                     # Sarvam STT/TTS are in Bolna's flat per-minute rate; Kalpa is not listed there
-                    "transcriber": {"provider": "sarvam", "model": "saaras:v4", "language": "hi", "stream": True, "endpointing": 700},
-                    "synthesizer": {"provider": "sarvam", "stream": True, "buffer_size": 150,
-                                    "provider_config": {"voice": "Priya", "voice_id": "priya", "model": "bulbul:v3", "language": "hi", "speed": 1.0}},
+                    "transcriber": transcriber("hi"),
+                    "synthesizer": synthesizer("hi"),
+                    "multilingual_config": {
+                        "enabled": True, "active_language": "hi",
+                        "languages": {k: {"transcriber": transcriber(k), "synthesizer": synthesizer(k), "system_prompt": prompt_for(k)} for k in LANGS},
+                        "switch_tool_description": "Switch language only when the caller asks for another language or keeps speaking full sentences in it. Never switch because of a short reply like haan, ha, ok or yes.",
+                    },
                     "input": {"provider": "plivo", "format": "wav"},
                     "output": {"provider": "plivo", "format": "wav"},
                     "api_tools": {"tools": [{k: v for k, v in t.items() if k != "value"} | {"key": t["key"]} for t in TOOLS],
@@ -114,10 +144,14 @@ def agent_payload():
                 # callers pause mid-story and while reading UTRs: wait ~1.2 s of silence before replying,
                 # and treat a 1-word sound ("haan", "hmm") as backchannel, not an interruption
                 "task_config": {"call_terminate": 480, "hangup_after_silence": 20, "incremental_delay": 1200,
-                                "number_of_words_for_interruption": 2, "backchanneling": True},
+                                "number_of_words_for_interruption": 2, "backchanneling": True,
+                                # let the LLM end the call once the conversation is over
+                                "hangup_after_LLMCall": True,
+                                "call_cancellation_prompt": "End the call if Saathi has said goodbye, or the customer confirmed they made the flagged payment and was thanked, or the next steps were given and the caller has no more questions, or it was a prank call that Saathi closed.",
+                                "call_hangup_message": {k: v["goodbye"] for k, v in LANGS.items()}},
             }],
         },
-        "agent_prompts": {"task_1": {"system_prompt": (HERE / "system_prompt.txt").read_text(encoding="utf-8")}},
+        "agent_prompts": {"task_1": {"system_prompt": prompt_for("hi")}},
     }
 
 
@@ -137,7 +171,7 @@ def main():
             print(out)
     elif cmd == "call":
         print(req("POST", "/call", {"agent_id": ID_FILE.read_text().strip(), "recipient_phone_number": sys.argv[2],
-                                    "user_data": {"opening": HELPLINE_OPENING, "call_context": HELPLINE_CONTEXT}}))
+                                    "user_data": {"opening": HELPLINE_OPENING, "call_context": HELPLINE_CONTEXT}, "agent_data": {"language": "hi"}}))
     elif cmd == "result":
         e = req("GET", f"/executions/{sys.argv[2]}")
         print(json.dumps({k: e.get(k) for k in ("status", "conversation_duration", "total_cost", "transcript", "extracted_data")},
