@@ -97,6 +97,8 @@ LANGS = {
            "goodbye": "Thank you. Please take care."},
 }
 HELPLINE_OPENING = LANGS["hi"]["helpline_opening"]
+# when the language isn't known before the call, the first line asks for it
+LANGUAGE_MENU = "For English, press 1. Hindi ke liye, 2 dabaiye."
 
 
 def prompt_for(lang: str) -> str:
@@ -145,6 +147,7 @@ def agent_payload():
                 # and treat a 1-word sound ("haan", "hmm") as backchannel, not an interruption
                 "task_config": {"call_terminate": 480, "hangup_after_silence": 20, "incremental_delay": 1200,
                                 "number_of_words_for_interruption": 2, "backchanneling": True,
+                                "dtmf_enabled": True,  # keypad 1 / 2 picks the language when we don't know it
                                 # let the LLM end the call once the conversation is over
                                 "hangup_after_LLMCall": True,
                                 "call_cancellation_prompt": "End the call if Saathi has said goodbye, or the customer confirmed they made the flagged payment and was thanked, or the next steps were given and the caller has no more questions, or it was a prank call that Saathi closed.",

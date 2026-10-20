@@ -288,6 +288,22 @@ def setup_agent(token: str | None = None):
     return out
 
 
+@app.get("/admin/agent")
+def agent_config(token: str | None = None):
+    """What Bolna actually stored for the agent: shows whether hang-up, keypad and language settings were accepted."""
+    admin(token)
+    out = bolna_call("GET", f"/v2/agent/{os.environ.get('BOLNA_AGENT_ID', '')}")
+    if not isinstance(out, dict):
+        return out
+    task = ((out.get("agent_config") or out).get("tasks") or [{}])[0]
+    tools = task.get("tools_config") or {}
+    keys = ("hangup_after_LLMCall", "call_cancellation_prompt", "call_hangup_message", "dtmf_enabled", "call_terminate", "incremental_delay")
+    return {"welcome": (out.get("agent_config") or out).get("agent_welcome_message"),
+            "task_config": {k: (task.get("task_config") or {}).get(k) for k in keys},
+            "multilingual": tools.get("multilingual_config"), "tools": [t.get("name") for t in (tools.get("api_tools") or {}).get("tools", [])],
+            "raw_keys": sorted(out)}
+
+
 @app.get("/admin/balance")
 def balance(token: str | None = None):
     admin(token)
@@ -307,14 +323,19 @@ async def call_me(req: Request):
     admin(b.get("token"))
     phone, lang = check_phone(b.get("phone")), check_lang(b.get("language"))
     c = new_case(f"call-{datetime.now():%m%d-%H%M%S}", caller_phone=phone, mode="helpline", language=lang)
-    log(c, f"caller asked for a call back in {bolna.LANGS[lang]['name']}; Saathi calling")
-    return place_call(c, {"opening": bolna.LANGS[lang]["helpline_opening"], "call_context": bolna.HELPLINE_CONTEXT})
+    log(c, f"caller asked for a call back ({lang_name(lang)}); Saathi calling")
+    opening = f"Namaste, this is Saathi, an AI helper for online fraud. {bolna.LANGUAGE_MENU}" if lang == "ask" else bolna.LANGS[lang]["helpline_opening"]
+    return place_call(c, {"opening": opening, "call_context": bolna.HELPLINE_CONTEXT})
+
+
+def lang_name(lang: str) -> str:
+    return "language picked on the call" if lang == "ask" else bolna.LANGS[lang]["name"]
 
 
 def check_lang(raw: str | None) -> str:
-    lang = (raw or "hi").lower()
-    if lang not in bolna.LANGS:
-        raise HTTPException(400, f"language must be one of {', '.join(bolna.LANGS)}")
+    lang = (raw or "ask").lower()  # "ask": the caller picks with the keypad at the start of the call
+    if lang != "ask" and lang not in bolna.LANGS:
+        raise HTTPException(400, f"language must be ask or one of {', '.join(bolna.LANGS)}")
     return lang
 
 
@@ -330,7 +351,7 @@ def check_phone(raw: str | None) -> str:
 def place_call(c: dict, user_data: dict):
     """Ask Bolna to dial the case's number; user_data fills {opening} and {call_context} in the agent."""
     out = bolna_call("POST", "/call", {"agent_id": os.environ["BOLNA_AGENT_ID"], "recipient_phone_number": c["caller_phone"],
-                                       "user_data": user_data, "agent_data": {"language": c.get("language", "hi")}})
+                                       "user_data": user_data, "agent_data": {"language": c.get("language") if c.get("language") in bolna.LANGS else "hi"}})
     if isinstance(out, dict):
         c["execution_id"] = out.get("execution_id") or out.get("id")
     else:
@@ -364,6 +385,8 @@ async def alert_call(req: Request):
                f"ek naye UPI ID par gaye hain. Kya yeh payment aapne khud kiya tha?") if lang == "hi" else (
                f"Hello {name}, this is Saathi, {ORG}'s AI fraud assistant. {amount:,.0f} rupees just went from your account "
                f"to a new UPI ID. Did you make this payment yourself?")
+    if lang == "ask":
+        opening = f"Namaste {name}, this is Saathi from {ORG}'s fraud team, about a payment from your account. {bolna.LANGUAGE_MENU}"
     context = (f"an alert call from {ORG}'s fraud team. The customer, {name}, was just debited Rs {amount:,.0f} by UPI to {payee} "
                f"at {at:%H:%M} today from their {ORG} account, and the payment was flagged as suspicious.")
     return place_call(c, {"opening": opening, "call_context": context})
