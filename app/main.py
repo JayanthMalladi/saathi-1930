@@ -257,11 +257,11 @@ def call_page():
 
 @app.get("/admin/simulate")
 def start_simulation(token: str | None = None, ids: str = ""):
-    """Run text simulations of the synthetic callers (all, or ?ids=V01,V08). Needs OPENAI_API_KEY on the server."""
+    """Run text simulations of the synthetic callers (all, or ?ids=V01,V08). Needs LLM_API_KEY or OPENAI_API_KEY on the server."""
     if not TOKEN or token != TOKEN:
         raise HTTPException(401, "bad token")
-    if not os.environ.get("OPENAI_API_KEY"):
-        raise HTTPException(500, "OPENAI_API_KEY is not set on the server")
+    if not (os.environ.get("LLM_API_KEY") or os.environ.get("OPENAI_API_KEY")):
+        raise HTTPException(500, "LLM_API_KEY is not set on the server")
     rid = simulate.start([i.strip() for i in ids.split(",") if i.strip()], f"http://127.0.0.1:{os.environ.get('PORT', '8000')}", TOKEN)
     return HTMLResponse(f'<meta http-equiv="refresh" content="0;url=/admin/sim/{rid}?token={escape(token)}">')
 
