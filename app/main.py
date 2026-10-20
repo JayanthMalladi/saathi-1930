@@ -29,6 +29,7 @@ app = FastAPI(title="Saathi 1930 backend")
 app.mount("/static", StaticFiles(directory=HERE / "static"), name="static")
 cases: dict[str, dict] = json.loads(STORE.read_text()) if STORE.exists() else {}
 latest_id: str | None = max(cases, key=lambda k: cases[k]["created_at"]) if cases else None
+last_dialled: str | None = None  # Saathi calls the caller, so the number it dialled is the caller's mobile
 
 
 def save():
@@ -57,7 +58,7 @@ def case_for(body: dict) -> dict:
         cid = latest_id if latest_id and cases[latest_id]["status"] == "in_call" else f"demo-{datetime.now():%H%M%S}"
     if cid not in cases:
         cases[cid] = {"id": cid, "created_at": now(), "status": "in_call", "consent": None,
-                      "transactions": [], "complaint": {}, "extracted": {}, "events": []}
+                      "transactions": [], "complaint": {}, "extracted": {}, "events": [], "caller_phone": last_dialled}
     latest_id = cid
     return cases[cid]
 
@@ -132,6 +133,8 @@ async def submit(req: Request, authorization: str | None = Header(None)):
     b = await req.json()
     c = case_for(b)
     c["complaint"] = {k: (None if blank(v) else v) for k, v in b.items() if k not in ("call_sid", "execution_id", "call_id")}
+    if len(re.sub(r"\D", "", c["complaint"].get("mobile") or "")) < 10 and c.get("caller_phone"):
+        c["complaint"]["mobile"] = c["caller_phone"]
     c["status"] = "submitted"
     c["submitted_at"] = now()
     c["events"].append([now(), "complaint ready, sent to bank queue"])
@@ -247,6 +250,8 @@ async def call_me(req: Request):
         raise HTTPException(400, "Use an Indian mobile in the form +91XXXXXXXXXX")
     if not os.environ.get("BOLNA_AGENT_ID"):
         raise HTTPException(500, "BOLNA_AGENT_ID is not set yet")
+    global last_dialled
+    last_dialled = phone
     return bolna_call("POST", "/call", {"agent_id": os.environ["BOLNA_AGENT_ID"], "recipient_phone_number": phone})
 
 
