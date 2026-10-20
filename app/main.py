@@ -52,6 +52,10 @@ def blank(v):
 
 def new_case(cid: str, **extra) -> dict:
     global latest_id
+    base, n = cid, 1
+    while cid in cases:  # two calls placed in the same second
+        n += 1
+        cid = f"{base}-{n}"
     cases[cid] = {"id": cid, "created_at": now(), "status": "in_call", "consent": None,
                   "transactions": [], "complaint": {}, "extracted": {}, "events": [], **extra}
     latest_id = cid
@@ -219,6 +223,11 @@ def demo(caller_id: str):
     return {"case_id": cid}
 
 
+@app.get("/api/config")
+def config():
+    return {"org": ORG}
+
+
 @app.get("/api/cases")
 def list_cases():
     out = [{**c, "priority": priority(c)} for c in cases.values()]
@@ -327,7 +336,7 @@ async def alert_call(req: Request):
     payee = (b.get("payee") or "").strip()[:60] or "an unknown UPI ID"
     at = datetime.now()
     utr = f"9999{at:%d%H%M%S}"  # mock bank-side UTR; the 9999 prefix marks it as fake
-    alert = {"amount_inr": amount, "payee": payee, "debit_at": at.isoformat(timespec="seconds"), "utr": utr, "answer": None}
+    alert = {"name": name, "amount_inr": amount, "payee": payee, "debit_at": at.isoformat(timespec="seconds"), "utr": utr, "answer": None}
     c = new_case(f"alert-{at:%m%d-%H%M%S}", caller_phone=phone, mode="alert", status="alert_calling", alert=alert,
                  consent=None, complaint={"suspect_vpa_or_account": payee},
                  transactions=[{"amount_inr": amount, "mode": "UPI", "utr_or_ref": utr, "app": ORG, "bank": ORG,

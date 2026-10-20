@@ -16,3 +16,6 @@ table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:8px 6px;
 button{background:var(--accent);color:#fff;border:0;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:13px}
 .steps li{margin:4px 0}.flash{animation:flash 1.2s}@keyframes flash{from{background:#fff7c2}}
 @media(max-width:600px){th:nth-child(n+5),td:nth-child(n+5){display:none}}
+.row{display:flex;flex-wrap:wrap;gap:8px}.row input{font-size:15px;padding:7px 9px;border:1px solid var(--line);border-radius:6px;flex:1 1 150px;min-width:0}
+.hint{color:var(--muted);margin:0 0 10px}.small{font-size:12px;margin-left:6px}.clock{font-variant-numeric:tabular-nums}
+.banner{border-left:4px solid var(--bad)}.sms{white-space:pre-wrap;background:#f0f4f8;border-radius:8px;padding:10px 12px;font-size:14px}

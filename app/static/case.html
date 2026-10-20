@@ -2,6 +2,7 @@
 <title>Saathi 1930 · Complaint</title><link rel="stylesheet" href="/static/style.css"></head><body>
 <header><h1>Saathi 1930 · Cyber fraud complaint draft</h1><span id="status"></span><a href="/bank">Bank queue →</a></header>
 <main>
+<div class="card banner" id="alert" hidden></div>
 <div class="card"><h2>Complainant</h2><div class="grid" id="who"></div></div>
 <div class="card"><h2>Incident</h2><div class="grid" id="incident"></div></div>
 <div class="card"><h2>Transactions (one row per debit)</h2>
@@ -13,6 +14,8 @@
 <li>Tell your bank <b>in writing today</b>. Reporting within 3 working days gives the most protection for debits you did not authorise (RBI, 6 Jul 2017).</li>
 <li>Keep screenshots, bank SMS and the scammer's number. Never share OTP or UPI PIN with anyone who calls back.</li>
 </ol></div>
+<div class="card" id="smsbox" hidden><h2>SMS sent to the caller (mock)</h2><div class="sms" id="sms"></div></div>
+<p><a id="audit" href="#">Download audit log ↓</a></p>
 </main>
 <script>
 const id = location.pathname.startsWith('/case/') ? location.pathname.split('/')[2] : 'latest';
@@ -22,13 +25,17 @@ let lastTx = 0;
 async function load(){
   const r = await fetch('/api/cases/' + id); if(!r.ok){document.getElementById('status').textContent='Waiting for a call…';return}
   const c = await r.json(), k = c.complaint || {}, s = c.consent || {}, p = c.priority;
-  document.getElementById('status').innerHTML = c.status === 'in_call' ? '<span class="pill warn live">● On call</span>' : '<span class="pill ok">Complaint ready</span>';
+  document.getElementById('status').innerHTML = ({in_call:'<span class="pill warn live">● On call</span>', alert_calling:'<span class="pill warn live">● Calling customer</span>', cleared:'<span class="pill ok">Customer confirmed it was them</span>', no_answer:'<span class="pill bad">No answer</span>', call_ended:'<span class="pill warn">Call ended</span>'})[c.status] || '<span class="pill ok">Complaint ready</span>';
   document.getElementById('who').innerHTML = f('Name', s.caller_name) + f('Mobile', k.mobile) + f('Account holder', s.caller_name ? (s.is_account_holder ? 'Caller' : s.account_holder_name || 'Someone else') : '') + f('Consent', s.at ? 'Recorded ' + s.at.slice(11,16) : '');
   document.getElementById('incident').innerHTML = f('Fraud type', k.fraud_type) + f('Date and time', k.incident_datetime || (c.transactions[0]||{}).datetime) + f('Language', k.language) + f('Description', k.description);
   document.getElementById('tx').innerHTML = c.transactions.map((t,i)=>`<tr class="${i>=lastTx?'flash':''}"><td>${i+1}</td><td>₹${Number(t.amount_inr).toLocaleString('en-IN')}</td><td>${esc(t.mode)}</td>
     <td class="mono">${esc((t.utr_or_ref||'').replace(/(\d{4})(?=\d)/g,'$1 '))} ${t.utr_issue?`<span class="pill bad">${esc(t.utr_issue)}</span>`:'<span class="pill ok">✓</span>'}</td><td>${esc(t.app)}</td><td>${esc(t.bank)}</td><td>${esc(t.datetime)}</td></tr>`).join('') || '<tr><td colspan="7" class="empty">waiting…</td></tr>';
   lastTx = c.transactions.length;
   document.getElementById('total').innerHTML = p.total_inr ? `<b>Total ₹${p.total_inr.toLocaleString('en-IN')}</b> · ${p.rbi_window ? `<span class="pill ${p.working_days<=3?'ok':'warn'}">${p.rbi_window}</span>` : ''}` : '';
+  const al = document.getElementById('alert');
+  if (c.alert) { al.hidden = false; al.innerHTML = `<h2>Flagged debit · "was this you?" call</h2><div class="grid">${f('Amount', '₹' + Number(c.alert.amount_inr).toLocaleString('en-IN'))}${f('To', c.alert.payee)}${f('Flagged at', c.alert.debit_at.slice(11,16))}${f('Customer said', c.alert.answer || '')}</div>`; }
+  if (c.sms) { document.getElementById('smsbox').hidden = false; document.getElementById('sms').textContent = c.sms; }
+  document.getElementById('audit').href = '/api/cases/' + encodeURIComponent(c.id) + '/audit';
   document.getElementById('suspect').innerHTML = f('Phone', k.suspect_phone) + f('UPI ID / account', k.suspect_vpa_or_account);
 }
 load(); setInterval(load, 1500);
