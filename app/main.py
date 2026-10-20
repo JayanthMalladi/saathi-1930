@@ -276,7 +276,12 @@ def llm_check(token: str | None = None):
         key = os.environ.get("LLM_API_KEY") or os.environ.get("OPENAI_API_KEY", "")
         r = urllib.request.Request(simulate.BASE_URL + "/models", headers={"Authorization": f"Bearer {key}", "User-Agent": "saathi-1930-sim/1.0"})
         with urllib.request.urlopen(r, timeout=30) as resp:
-            out["models_available"] = sorted(m.get("id") for m in json.loads(resp.read()).get("data", []))
+            raw = resp.read()
+            ctype = resp.headers.get("Content-Type", "")
+        try:
+            out["models_available"] = sorted(m.get("id") for m in json.loads(raw).get("data", []))
+        except ValueError:  # not JSON: show what the provider actually sent back
+            out["models_available"] = {"status": resp.status, "content_type": ctype, "body_start": raw[:400].decode(errors="replace")}
     except Exception as e:
         out["models_available"] = f"error: {e!r}"
     for role, model in (("agent", simulate.AGENT_MODEL), ("victim", simulate.VICTIM_MODEL), ("judge", simulate.JUDGE_MODEL)):
