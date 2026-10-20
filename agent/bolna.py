@@ -135,7 +135,7 @@ def agent_payload():
                         "enabled": True, "active_language": "hi",
                         "languages": {k: {"transcriber": transcriber(k), "synthesizer": synthesizer(k), "system_prompt": prompt_for(k)} for k in LANGS},
                         # Bolna's default also switches on auto-detected language, which flipped to English on a bare "haa"
-                        "language_switch_trigger": "requested",
+                        "language_switch_trigger": "caller_requested",
                         "switch_tool_description": "Switch language only when the caller asks for another language or keeps speaking full sentences in it. Never switch because of a short reply like haan, ha, ok or yes.",
                     },
                     "input": {"provider": "plivo", "format": "wav"},
