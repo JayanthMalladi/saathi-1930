@@ -205,9 +205,31 @@ async def bolna_webhook(req: Request):
         if c["status"] == "in_call":
             c["status"] = "call_ended"
         elif c["status"] == "alert_calling":
-            c["status"] = "ended_no_reply"  # picked up, but never said yes or no
+            guess = answer_from_transcript(c.get("transcript"))
+            if guess is None:
+                c["status"] = "ended_no_reply"  # picked up, but never said yes or no
+            else:  # the agent skipped confirm_alert: read the answer from the transcript instead
+                c["alert"].update(answer="customer made it" if guess else "NOT the customer", answered_at=now(), from_transcript=True)
+                c["status"] = "cleared" if guess else "call_ended"
+                log(c, f"customer's answer read from the transcript: {'made the payment' if guess else 'not me'}")
     save()
     return {"ok": True}
+
+
+YES_WORDS = re.compile(r"\b(yes|haan|haa|ha|ji|i did|it was me|maine kiya)\b|हाँ|हां|हा\b|जी|येस|आई डिड", re.I)
+NO_WORDS = re.compile(r"\b(no|nahi|nahin|not me|didn'?t)\b|नहीं|नही|नो\b", re.I)
+
+
+def answer_from_transcript(transcript) -> bool | None:
+    """The caller's reply to the "did you make this payment" question, if it was a plain yes or no."""
+    lines = [l.strip() for l in str(transcript or "").splitlines() if l.strip()]
+    for i, line in enumerate(lines):
+        if line.startswith("assistant:") and re.search(r"yes or no|haan ya nahi|khud kiya", line, re.I):
+            reply = next((l[5:] for l in lines[i + 1:] if l.startswith("user:")), "")
+            yes, no = bool(YES_WORDS.search(reply)), bool(NO_WORDS.search(reply))
+            if yes != no:
+                return yes
+    return None
 
 
 NOT_ANSWERED = {"no-answer", "busy", "failed", "canceled", "cancelled", "balance-low", "error"}
