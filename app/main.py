@@ -75,6 +75,14 @@ def case_for(body: dict) -> dict:
     return cases[cid]
 
 
+def intake_started(c: dict):
+    """On an alert call the fraud intake only starts after the customer said "not me"."""
+    if c.get("mode") == "alert" and not c["alert"].get("answer"):
+        c["alert"].update(answer="NOT the customer", answered_at=now())
+        c["status"] = "in_call"
+        log(c, "customer says: this was not me")
+
+
 def log(c: dict, what: str):
     c["events"].append([now(), what])
 
@@ -125,6 +133,7 @@ async def consent(req: Request, authorization: str | None = Header(None)):
     auth(authorization)
     b = await req.json()
     c = case_for(b)
+    intake_started(c)
     c["consent"] = {"caller_name": b.get("caller_name"), "is_account_holder": str(b.get("is_account_holder")).lower() in ("true", "1", "yes"),
                     "account_holder_name": None if blank(b.get("account_holder_name")) else b["account_holder_name"], "at": now()}
     log(c, "consent recorded")
@@ -137,6 +146,7 @@ async def transaction(req: Request, authorization: str | None = Header(None)):
     auth(authorization)
     b = await req.json()
     c = case_for(b)
+    intake_started(c)
     try:
         amount = float(str(b.get("amount_inr")).replace(",", ""))
     except ValueError:
@@ -157,6 +167,7 @@ async def submit(req: Request, authorization: str | None = Header(None)):
     auth(authorization)
     b = await req.json()
     c = case_for(b)
+    intake_started(c)
     c["complaint"] = {k: (None if blank(v) else v) for k, v in b.items() if k not in ("call_sid", "execution_id", "call_id")}
     if len(re.sub(r"\D", "", c["complaint"].get("mobile") or "")) < 10 and c.get("caller_phone"):
         c["complaint"]["mobile"] = c["caller_phone"]  # Saathi dialled the caller, so we already have their number
@@ -216,8 +227,8 @@ async def bolna_webhook(req: Request):
     return {"ok": True}
 
 
-YES_WORDS = re.compile(r"\b(yes|haan|haa|ha|ji|i did|it was me|maine kiya)\b|हाँ|हां|हा\b|जी|येस|आई डिड", re.I)
-NO_WORDS = re.compile(r"\b(no|nahi|nahin|not me|didn'?t)\b|नहीं|नही|नो\b", re.I)
+YES_WORDS = re.compile(r"\b(yes|haan|haa|ha|ji|i did|it was me|maine kiya)\b|हाँ|हां|हा(?![\u0900-\u0963\u0966-\u097F])|जी|येस|यस|आई डिड|मैंने किया", re.I)
+NO_WORDS = re.compile(r"\b(no|nahi|nahin|not me|didn'?t)\b|नहीं|नही|नो(?![\u0900-\u0963\u0966-\u097F])", re.I)
 
 
 def answer_from_transcript(transcript) -> bool | None:

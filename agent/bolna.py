@@ -73,25 +73,33 @@ TOOLS = [
          {"mobile": S, "fraud_type": S, "incident_datetime": S, "description": S,
           "suspect_phone": S, "suspect_vpa_or_account": S, "language": S},
          ["fraud_type", "description"], "/api/submit", "Ek second, aapki complaint tayyar kar rahi hoon."),
-    tool("confirm_alert",
-         "Alert calls only: call once the customer says whether they made the flagged payment themselves.",
-         {"customer_made_payment": {"type": "boolean"},
-          "note": {"type": "string", "description": "What the customer said, in a few words"}},
-         ["customer_made_payment"], "/api/alert-answer"),
 ]
 
 # Every call is placed with user_data filling these (see app/main.py): {opening} is the first line Saathi says,
 # {call_context} tells the prompt whether this is a helpline callback or a suspicious-debit alert.
 HELPLINE_CONTEXT = "a helpline callback: the caller asked Saathi to call them about a fraud."
 
-# Every call opens by asking which language the caller wants; the prompt then speaks only that language.
-# (Bolna's multilingual config switched transcriber and voice mid-call, but calls stopped hanging up after a switch.)
+# Every call opens by asking which language the caller wants. Answering that question counts as a request in
+# Bolna's "caller_requested" mode, so Bolna itself switches voice, listener and prompt; the prompts hold no
+# switching instructions (Bolna's docs say not to add them).
 LANGUAGE_MENU = "Aap Hindi mein baat karna chahenge, ya English mein?"
 HELPLINE_OPENING = f"Namaste, main Saathi hoon, online fraud mein madad ke liye ek AI helper. {LANGUAGE_MENU}"
+LANGS = {
+    "hi": {"rule": "Speak Hinglish: everyday Hindi in Roman script, with common English words.",
+           "question": "Kya yeh payment aapne khud kiya tha, haan ya nahi?",
+           "closing": "Theek hai, dhanyavaad. Kabhi bhi kisi ko OTP ya PIN mat batayiye.",
+           "goodbye": "Apna dhyan rakhiye. Namaste."},
+    "en": {"rule": "Speak simple Indian English.",
+           "question": "Did you make this payment yourself, yes or no?",
+           "closing": "Okay, thank you. Never share your OTP or PIN with anyone.",
+           "goodbye": "Take care. Goodbye."},
+}
 
 
-def prompt() -> str:
-    return (HERE / "system_prompt.txt").read_text(encoding="utf-8")
+def prompt_for(lang: str) -> str:
+    L = LANGS[lang]
+    return ((HERE / "system_prompt.txt").read_text(encoding="utf-8").replace("LANGUAGE_RULE", L["rule"])
+            .replace("PAYMENT_QUESTION", L["question"]).replace("CLOSING_LINE", L["closing"]))
 
 
 def transcriber(lang):
@@ -122,9 +130,10 @@ def agent_payload():
                     # Sarvam STT/TTS are in Bolna's flat per-minute rate; Kalpa is not listed there
                     "transcriber": transcriber("hi"),
                     "synthesizer": synthesizer("hi"),
-                    # off, but Bolna still requires two languages here to accept the update
-                    "multilingual_config": {"enabled": False, "active_language": "hi",
-                                            "languages": {k: {"transcriber": transcriber(k), "synthesizer": synthesizer(k)} for k in ("hi", "en")}},
+                    "multilingual_config": {
+                        "enabled": True, "active_language": "hi", "language_switch_trigger": "caller_requested",
+                        "languages": {k: {"transcriber": transcriber(k), "synthesizer": synthesizer(k), "system_prompt": prompt_for(k)} for k in LANGS},
+                    },
                     "input": {"provider": "plivo", "format": "wav"},
                     "output": {"provider": "plivo", "format": "wav"},
                     "api_tools": {"tools": [{k: v for k, v in t.items() if k != "value"} | {"key": t["key"]} for t in TOOLS],
@@ -132,17 +141,25 @@ def agent_payload():
                 },
                 # callers pause mid-story and while reading UTRs: wait ~1.2 s of silence before replying,
                 # and treat a 1-word sound ("haan", "hmm") as backchannel, not an interruption
-                "task_config": {"call_terminate": 480, "hangup_after_silence": 12, "incremental_delay": 1200,
+                # silence hang-up (12 s) comes before the "are you still there?" check (15 s), so a call
+                # that missed its hang-up still ends shortly after the goodbye
+                "task_config": {"call_terminate": 480, "hangup_after_silence": 12, "check_if_user_online": True,
+                                "trigger_user_online_message_after": 15, "incremental_delay": 1200,
                                 "number_of_words_for_interruption": 2, "backchanneling": True,
-                                # let the LLM end the call once the conversation is over
+                                # "hang up using a prompt": the model ends the call with Bolna's end-call tool, so the
+                                # turn that ends a call must not also call one of our tools (that turn never hung up)
                                 "hangup_after_LLMCall": True,
-                                "call_cancellation_prompt": "End the call if the customer confirmed they made the flagged payment and was thanked, or the next steps were given and the caller has no more questions, or it was a prank call that Saathi closed.",
-                                # Bolna only hung up when a hang-up message was set, so the goodbye lives here
-                                # and the prompt tells the agent not to say its own (that played twice)
-                                "call_hangup_message": "Dhanyavaad. Thank you, take care.", "dtmf_enabled": False},
+                                "call_cancellation_prompt": (
+                                    "A conversation is considered complete if any of the following conditions are met:\n"
+                                    "1. On an alert call, the customer said they made the flagged payment themselves and the assistant "
+                                    "has thanked them and reminded them not to share their OTP or PIN.\n"
+                                    "2. The assistant has given the next steps and the caller has no more questions, or says bye, thank you or ok.\n"
+                                    "3. The call is a prank or not about fraud, and the assistant has closed it politely."),
+                                # the goodbye is Bolna's hang-up message (per language); the prompt doesn't say its own
+                                "call_hangup_message": {k: v["goodbye"] for k, v in LANGS.items()}, "dtmf_enabled": False},
             }],
         },
-        "agent_prompts": {"task_1": {"system_prompt": prompt()}},
+        "agent_prompts": {"task_1": {"system_prompt": prompt_for("hi")}},
     }
 
 
