@@ -141,9 +141,9 @@ def agent_payload():
                 },
                 # callers pause mid-story and while reading UTRs: the transcriber waits 1.2 s of silence (endpointing) plus a 1.2 s delay before replying,
                 # and treat a 1-word sound ("haan", "hmm") as backchannel, not an interruption
-                # silence hang-up (12 s) comes before the "are you still there?" check (15 s), so a call
-                # that missed its hang-up still ends shortly after the goodbye
-                "task_config": {"call_terminate": 480, "hangup_after_silence": 12, "check_if_user_online": True,
+                # a 12 s silence hang-up cut a caller off while reading a UTR (a lost digit group counts as silence):
+                # ask "are you still there?" after 15 s and only hang up after 30 s
+                "task_config": {"call_terminate": 480, "hangup_after_silence": 30, "check_if_user_online": True,
                                 "trigger_user_online_message_after": 15, "incremental_delay": 1200,
                                 # 1 word: a caller reading digits ("8885") must be able to cut in
                                 "number_of_words_for_interruption": 1,
