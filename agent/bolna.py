@@ -88,22 +88,22 @@ LANGS = {
     "hi": {"rule": "Speak Hinglish: everyday Hindi in Roman script, with common English words.",
            "question": "Kya yeh payment aapne khud kiya tha, haan ya nahi?",
            "closing": "Theek hai, dhanyavaad. Kabhi bhi kisi ko OTP ya PIN mat batayiye.",
-           "goodbye": "Apna dhyan rakhiye. Namaste."},
+           "goodbye": "Apna dhyan rakhiye. Namaste.", "listen": "haan"},
     "en": {"rule": "Speak simple Indian English.",
            "question": "Did you make this payment yourself, yes or no?",
            "closing": "Okay, thank you. Never share your OTP or PIN with anyone.",
-           "goodbye": "Take care. Goodbye."},
+           "goodbye": "Take care. Goodbye.", "listen": "okay"},
 }
 
 
 def prompt_for(lang: str) -> str:
     L = LANGS[lang]
     return ((HERE / "system_prompt.txt").read_text(encoding="utf-8").replace("LANGUAGE_RULE", L["rule"])
-            .replace("PAYMENT_QUESTION", L["question"]).replace("CLOSING_LINE", L["closing"]))
+            .replace("PAYMENT_QUESTION", L["question"]).replace("CLOSING_LINE", L["closing"]).replace("LISTEN_WORD", L["listen"]))
 
 
 def transcriber(lang):
-    return {"provider": "sarvam", "model": "saaras:v4", "language": lang, "stream": True, "endpointing": 700}
+    return {"provider": "sarvam", "model": "saaras:v4", "language": lang, "stream": True, "endpointing": 1200}
 
 
 def synthesizer(lang):
@@ -139,13 +139,15 @@ def agent_payload():
                     "api_tools": {"tools": [{k: v for k, v in t.items() if k != "value"} | {"key": t["key"]} for t in TOOLS],
                                   "tools_params": {t["name"]: t["value"] for t in TOOLS}},
                 },
-                # callers pause mid-story and while reading UTRs: wait ~1.2 s of silence before replying,
+                # callers pause mid-story and while reading UTRs: the transcriber waits 1.2 s of silence (endpointing) plus a 1.2 s delay before replying,
                 # and treat a 1-word sound ("haan", "hmm") as backchannel, not an interruption
                 # silence hang-up (12 s) comes before the "are you still there?" check (15 s), so a call
                 # that missed its hang-up still ends shortly after the goodbye
                 "task_config": {"call_terminate": 480, "hangup_after_silence": 12, "check_if_user_online": True,
                                 "trigger_user_online_message_after": 15, "incremental_delay": 1200,
-                                "number_of_words_for_interruption": 2, "backchanneling": True,
+                                "number_of_words_for_interruption": 2,
+                                # backchanneling spoke Hindi fillers ("main sun rahi hoon") over English callers' pauses
+                                "backchanneling": False,
                                 # "hang up using a prompt": the model ends the call with Bolna's end-call tool, so the
                                 # turn that ends a call must not also call one of our tools (that turn never hung up)
                                 "hangup_after_LLMCall": True,
