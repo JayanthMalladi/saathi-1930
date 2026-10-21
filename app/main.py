@@ -75,6 +75,15 @@ def case_for(body: dict) -> dict:
     return cases[cid]
 
 
+def alert_reminder(c: dict) -> str:
+    """Tool replies remind the model which debit is already on the case (it kept asking for the flagged one's UTR)."""
+    a = c.get("alert")
+    if not a:
+        return ""
+    return (f"The flagged Rs {a['amount_inr']:,.0f} debit is already recorded with its transaction number: "
+            f"never ask about it again. Only collect details of OTHER debits. ")
+
+
 def intake_started(c: dict):
     """On an alert call the fraud intake only starts after the customer said "not me"."""
     if c.get("mode") == "alert" and not c["alert"].get("answer"):
@@ -138,7 +147,7 @@ async def consent(req: Request, authorization: str | None = Header(None)):
                     "account_holder_name": None if blank(b.get("account_holder_name")) else b["account_holder_name"], "at": now()}
     log(c, "consent recorded")
     save()
-    return {"ok": True, "message": "Consent noted. Continue collecting details."}
+    return {"ok": True, "message": "Consent noted. " + alert_reminder(c) + "Continue collecting details, one question at a time."}
 
 
 @app.post("/api/transaction")
@@ -159,7 +168,7 @@ async def transaction(req: Request, authorization: str | None = Header(None)):
     save()
     if t["utr_issue"]:
         return {"ok": True, "message": f"Saved, but check the UTR: {t['utr_issue']}. Ask which label it had on the screen."}
-    return {"ok": True, "message": f"Debit {len(c['transactions'])} saved. Ask if there were any other debits."}
+    return {"ok": True, "message": f"Debit {len(c['transactions'])} saved. " + alert_reminder(c) + "Ask if there were any other debits."}
 
 
 @app.post("/api/submit")
@@ -405,7 +414,9 @@ async def alert_call(req: Request):
     # the customer picks the language first; the prompt then tells them about the payment in that language
     opening = f"Namaste {name}, main Saathi hoon, {ORG} ki fraud team se, aapke account ki ek payment ke baare mein. {bolna.LANGUAGE_MENU}"
     context = (f"an alert call from {ORG}'s fraud team. The customer, {name}, was just debited Rs {amount:,.0f} by UPI to {payee} "
-               f"at {at:%H:%M} today from their {ORG} account, and the payment was flagged as suspicious.")
+               f"at {at:%H:%M} today from their {ORG} account, and the payment was flagged as suspicious. The bank already has this "
+               f"debit's amount, time and transaction number: never ask the customer for them. If there were other debits, those are separate "
+               f"and are the only ones to collect details for.")
     return place_call(c, {"opening": opening, "call_context": context})
 
 

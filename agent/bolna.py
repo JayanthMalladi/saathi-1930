@@ -61,7 +61,7 @@ TOOLS = [
          "Call once the caller agrees that their details can be noted and shared with the cyber cell and their bank.",
          {"caller_name": S, "is_account_holder": {"type": "boolean"},
           "account_holder_name": {"type": "string", "description": "Only if the caller is calling for someone else"}},
-         ["caller_name", "is_account_holder"], "/api/consent", "Theek hai, note kar rahi hoon."),
+         ["caller_name", "is_account_holder"], "/api/consent"),
     tool("add_transaction",
          "Call after the caller confirms one fraudulent debit: amount, UTR or transaction ID, app, bank and time. Call once per debit.",
          {"amount_inr": {"type": "number"}, "utr_or_ref": S,
@@ -72,7 +72,7 @@ TOOLS = [
          "Call when all details are collected and the caller has confirmed the read-back summary.",
          {"mobile": S, "fraud_type": S, "incident_datetime": S, "description": S,
           "suspect_phone": S, "suspect_vpa_or_account": S, "language": S},
-         ["fraud_type", "description"], "/api/submit", "Ek second, aapki complaint tayyar kar rahi hoon."),
+         ["fraud_type", "description"], "/api/submit"),
 ]
 
 # Every call is placed with user_data filling these (see app/main.py): {opening} is the first line Saathi says,
@@ -145,7 +145,8 @@ def agent_payload():
                 # that missed its hang-up still ends shortly after the goodbye
                 "task_config": {"call_terminate": 480, "hangup_after_silence": 12, "check_if_user_online": True,
                                 "trigger_user_online_message_after": 15, "incremental_delay": 1200,
-                                "number_of_words_for_interruption": 2,
+                                # 1 word: a caller reading digits ("8885") must be able to cut in
+                                "number_of_words_for_interruption": 1,
                                 # backchanneling spoke Hindi fillers ("main sun rahi hoon") over English callers' pauses
                                 "backchanneling": False,
                                 # "hang up using a prompt": the model ends the call with Bolna's end-call tool, so the
