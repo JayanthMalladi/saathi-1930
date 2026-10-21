@@ -122,7 +122,9 @@ def agent_payload():
                     # Sarvam STT/TTS are in Bolna's flat per-minute rate; Kalpa is not listed there
                     "transcriber": transcriber("hi"),
                     "synthesizer": synthesizer("hi"),
-                    "multilingual_config": {"enabled": False},
+                    # off, but Bolna still requires two languages here to accept the update
+                    "multilingual_config": {"enabled": False, "active_language": "hi",
+                                            "languages": {k: {"transcriber": transcriber(k), "synthesizer": synthesizer(k)} for k in ("hi", "en")}},
                     "input": {"provider": "plivo", "format": "wav"},
                     "output": {"provider": "plivo", "format": "wav"},
                     "api_tools": {"tools": [{k: v for k, v in t.items() if k != "value"} | {"key": t["key"]} for t in TOOLS],
