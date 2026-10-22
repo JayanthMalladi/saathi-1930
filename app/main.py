@@ -23,6 +23,7 @@ TOKEN = os.environ.get("BACKEND_TOKEN")  # Bolna sends this as its api_token; un
 CALLERS = HERE.parent / "test_calls" / "callers.json"
 sys.path.insert(0, str(HERE.parent / "agent"))
 import bolna  # noqa: E402  (agent config and Bolna API helper, shared with the CLI)
+import caller_bot  # noqa: E402
 import simulate  # noqa: E402
 
 app = FastAPI(title="Saathi 1930 backend")
@@ -391,18 +392,14 @@ def place_call(c: dict, user_data: dict):
     return out
 
 
-@app.post("/api/alert-call")
-async def alert_call(req: Request):
-    """Demo of the fintech flow: the fraud team flags a debit and Saathi calls the customer to ask "was this you?"."""
-    b = await req.json()
-    admin(b.get("token"))
-    phone = check_phone(b.get("phone"))
+def alert_case(phone: str, name: str, amount, payee: str) -> tuple[dict, dict]:
+    """Open the case for a flagged debit and build the user_data Saathi's alert call opens with."""
     try:
-        amount = float(str(b.get("amount")).replace(",", ""))
+        amount = float(str(amount).replace(",", ""))
     except ValueError:
         raise HTTPException(400, "amount must be a number")
-    name = (b.get("name") or "").strip()[:40] or "customer"
-    payee = (b.get("payee") or "").strip()[:60] or "an unknown UPI ID"
+    name = (name or "").strip()[:40] or "customer"
+    payee = (payee or "").strip()[:60] or "an unknown UPI ID"
     at = datetime.now()
     utr = f"9999{at:%d%H%M%S}"  # mock bank-side UTR; the 9999 prefix marks it as fake
     alert = {"name": name, "amount_inr": amount, "payee": payee, "debit_at": at.isoformat(timespec="seconds"), "utr": utr, "answer": None}
@@ -417,7 +414,48 @@ async def alert_call(req: Request):
                f"at {at:%H:%M} today from their {ORG} account, and the payment was flagged as suspicious. The bank already has this "
                f"debit's amount, time and transaction number: never ask the customer for them. If there were other debits, those are separate "
                f"and are the only ones to collect details for.")
-    return place_call(c, {"opening": opening, "call_context": context})
+    return c, {"opening": opening, "call_context": context}
+
+
+@app.post("/api/alert-call")
+async def alert_call(req: Request):
+    """Demo of the fintech flow: the fraud team flags a debit and Saathi calls the customer to ask "was this you?"."""
+    b = await req.json()
+    admin(b.get("token"))
+    phone = check_phone(b.get("phone"))
+    c, user_data = alert_case(phone, b.get("name"), b.get("amount"), b.get("payee"))
+    return place_call(c, user_data)
+
+
+@app.get("/bridge")
+def bridge_page():
+    return FileResponse(HERE / "static" / "bridge.html")
+
+
+@app.post("/api/bridge")
+async def bridge(req: Request):
+    """Voice test without a phone: mint a web-call session for Saathi (this server's Bolna account) and one for the
+    caller bot (its own account, key sent by the bridge page and not stored), for one scenario in caller_bot.SCENARIOS."""
+    b = await req.json()
+    admin(b.get("token"))
+    sc = caller_bot.SCENARIOS.get(b.get("scenario"))
+    if not sc or not b.get("botkey"):
+        raise HTTPException(400, f"need botkey and scenario, one of {', '.join(caller_bot.SCENARIOS)}")
+    bots = json.loads(caller_bot.ID_FILE.read_text())
+    try:
+        bot = caller_bot.req("POST", "/web-call/session", {"agent_id": bots[sc["lang"]], "user_data": {"persona": sc["persona"]}}, key=b["botkey"])
+    except urllib.error.HTTPError as e:
+        return JSONResponse({"bolna_status": e.code, "bolna_error": e.read().decode(errors="replace"), "side": "bot"}, status_code=502)
+    c, user_data = alert_case("web test", sc["name"], sc["amount"], sc["payee"])
+    saathi = bolna_call("POST", "/web-call/session", {"agent_id": os.environ["BOLNA_AGENT_ID"], "user_data": user_data})
+    if not isinstance(saathi, dict):
+        c["status"] = "call_failed"
+        save()
+        return saathi
+    c["execution_id"] = saathi.get("run_id")
+    log(c, f"bridge test with the caller bot ({b['scenario']})")
+    save()
+    return {"case_id": c["id"], "saathi": saathi, "bot": bot}
 
 
 @app.get("/api/cases/{cid}/audit")

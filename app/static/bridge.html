@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Saathi voice test</title>
+<link rel="stylesheet" href="/static/style.css">
+<script src="https://cdn.jsdelivr.net/gh/bolna-ai/web-call@v3.0.1/dist/bolna-web-call.min.js"></script>
+</head>
+<body>
+<main>
+<h1>Saathi voice test</h1>
+<p>Saathi and the caller bot join as web calls, and this page plays each one's voice into the other's microphone. Nobody needs to talk. Keep this tab open until the call ends.</p>
+<p>
+  <label>Scenario
+    <select id="scenario">
+      <option value="rohit">Rohit: English, "no", AnyDesk, second debit</option>
+      <option value="sunita">Sunita: Hindi, "no", shared OTP</option>
+      <option value="priya">Priya: English, "yes"</option>
+    </select>
+  </label>
+  <label><input type="checkbox" id="listen" checked> Play the call here</label>
+</p>
+<p><button id="start">Start test call</button> <button id="stop" disabled>Stop</button></p>
+<pre id="log"></pre>
+</main>
+<script>
+// token and bot key come in the link's #fragment, which never reaches any server log
+const params = new URLSearchParams(location.hash.slice(1));
+const logEl = document.getElementById('log');
+const say = m => { logEl.textContent += `${new Date().toLocaleTimeString()}  ${m}\n`; };
+if (!params.get('token') || !params.get('botkey')) say('This link is missing #token=...&botkey=...');
+
+// each web call asks for "the microphone"; hand it the other agent's voice instead
+const realGetUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
+let micFor = null;  // MediaStreamDestination the next getUserMedia call should return
+navigator.mediaDevices.getUserMedia = async c => {
+  if (!micFor) return realGetUserMedia(c);
+  return new MediaStream([micFor.stream.getAudioTracks()[0].clone()]);  // the SDK stops its preflight track
+};
+
+let calls = [];
+async function stopAll() {
+  await Promise.all(calls.map(c => c.stop().catch(() => {})));
+  calls = [];
+  document.getElementById('start').disabled = false;
+  document.getElementById('stop').disabled = true;
+}
+
+async function remoteStream(el) {
+  for (let i = 0; i < 100; i++) {
+    if (el.srcObject && el.srcObject.getAudioTracks().length) return el.srcObject;
+    await new Promise(r => setTimeout(r, 100));
+  }
+  throw new Error('no audio from the agent');
+}
+
+document.getElementById('stop').onclick = () => { say('stopped'); stopAll(); };
+document.getElementById('start').onclick = async () => {
+  document.getElementById('start').disabled = true;
+  document.getElementById('stop').disabled = false;
+  const ctx = new AudioContext();
+  await ctx.resume();
+  const toSaathi = ctx.createMediaStreamDestination(), toBot = ctx.createMediaStreamDestination();
+  const elSaathi = new Audio(), elBot = new Audio();
+  elSaathi.muted = elBot.muted = true;  // the mix below goes to the speakers instead
+  try {
+    say('getting sessions');
+    const r = await fetch('/api/bridge', {method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({token: params.get('token'), botkey: params.get('botkey'), scenario: document.getElementById('scenario').value})});
+    const s = await r.json();
+    if (!r.ok) throw new Error(JSON.stringify(s));
+    say(`case ${s.case_id}, Saathi run ${s.saathi.run_id}, bot run ${s.bot.run_id}`);
+
+    const bot = new BolnaWebCall({session: s.bot, audioElement: elBot, audio: {echoCancellation: false, noiseSuppression: false, autoGainControl: false}});
+    const saathi = new BolnaWebCall({session: s.saathi, audioElement: elSaathi, audio: {echoCancellation: false, noiseSuppression: false, autoGainControl: false}});
+    calls = [bot, saathi];
+    for (const [name, c] of [['bot', bot], ['Saathi', saathi]]) {
+      c.on('call-end', ({reason}) => { say(`${name} ended (${reason})`); stopAll(); });
+      c.on('error', e => say(`${name} error: ${e.code} ${e.message}`));
+    }
+    // bot first, so Saathi's opening line is the first thing it hears
+    micFor = toBot; await bot.start(); say('bot connected');
+    micFor = toSaathi; await saathi.start(); say('Saathi connected');
+    micFor = null;
+    const fromSaathi = ctx.createMediaStreamSource(await remoteStream(elSaathi));
+    const fromBot = ctx.createMediaStreamSource(await remoteStream(elBot));
+    fromSaathi.connect(toBot);
+    fromBot.connect(toSaathi);
+    if (document.getElementById('listen').checked) { fromSaathi.connect(ctx.destination); fromBot.connect(ctx.destination); }
+    elSaathi.play().catch(() => {}); elBot.play().catch(() => {});
+    say('bridged: the two agents are talking');
+  } catch (e) {
+    micFor = null;
+    say(`failed: ${e.message || e}`);
+    stopAll();
+  }
+};
+</script>
+</body>
+</html>
