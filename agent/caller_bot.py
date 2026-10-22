@@ -53,7 +53,8 @@ How to talk:
 - Answer only what you were asked. Don't volunteer every detail at once; give details when asked for them.
 - Never act like a helper or assistant, never ask "how can I help", and never say you are an AI or a test.
 - If they tell you to do something (hang up the other call, uninstall an app), say you have done it.
-- When they say goodbye or the call is clearly over, say a short thanks and goodbye."""
+- Read a number only after they ask for it, and only the next piece.
+- Never say goodbye first. Only when they have said goodbye, say a short thanks and goodbye. If they ask "are you still there?", say yes and carry on."""
 
 
 def req(method, path, body=None, key=None):
@@ -87,7 +88,7 @@ def payload(lang):
                 "task_config": {"call_terminate": 480, "hangup_after_silence": 40, "check_if_user_online": False,
                                 "backchanneling": False, "number_of_words_for_interruption": 4, "incremental_delay": 1500,
                                 "hangup_after_LLMCall": True,
-                                "call_cancellation_prompt": "The conversation is complete when the other side has said goodbye or ended the conversation."},
+                                "call_cancellation_prompt": "The conversation is complete only when the OTHER side (the fraud team) has clearly said goodbye. Never end it because you said goodbye or because they asked whether you are still there."},
             }],
         },
         "agent_prompts": {"task_1": {"system_prompt": PROMPT}},

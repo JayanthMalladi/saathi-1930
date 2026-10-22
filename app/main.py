@@ -458,6 +458,37 @@ async def bridge(req: Request):
     return {"case_id": c["id"], "saathi": saathi, "bot": bot}
 
 
+# Auto mode: the bridge page, left open in a browser, polls for runs queued here and reports what it is doing,
+# so test runs can be started and watched without anyone at the laptop.
+bridge_queue: list[str] = []
+bridge_page_status: dict = {}
+
+
+@app.post("/api/bridge/queue")
+async def bridge_enqueue(req: Request):
+    b = await req.json()
+    admin(b.get("token"))
+    if b.get("scenario") not in caller_bot.SCENARIOS:
+        raise HTTPException(400, f"scenario must be one of {', '.join(caller_bot.SCENARIOS)}")
+    bridge_queue.append(b["scenario"])
+    return {"queued": list(bridge_queue), "page": bridge_page_status}
+
+
+@app.post("/api/bridge/next")
+async def bridge_next(req: Request):
+    """The page's poll: report its state, and take the next queued run if it is free."""
+    b = await req.json()
+    admin(b.get("token"))
+    bridge_page_status.update(state=b.get("state"), log=(b.get("log") or "")[-3000:], at=now())
+    return {"scenario": bridge_queue.pop(0) if bridge_queue and b.get("state") == "idle" else None}
+
+
+@app.get("/api/bridge/status")
+def bridge_status(token: str | None = None):
+    admin(token)
+    return {"queued": bridge_queue, "page": bridge_page_status}
+
+
 @app.get("/api/cases/{cid}/audit")
 def audit(cid: str):
     """Everything that happened on a case, with timestamps, as a file the bank's compliance team can keep."""

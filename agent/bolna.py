@@ -103,7 +103,7 @@ def prompt_for(lang: str) -> str:
 
 
 def transcriber(lang):
-    return {"provider": "sarvam", "model": "saaras:v4", "language": lang, "stream": True, "endpointing": 1200}
+    return {"provider": "sarvam", "model": "saaras:v4", "language": lang, "stream": True, "endpointing": 1600}
 
 
 def synthesizer(lang):
@@ -139,7 +139,7 @@ def agent_payload():
                     "api_tools": {"tools": [{k: v for k, v in t.items() if k != "value"} | {"key": t["key"]} for t in TOOLS],
                                   "tools_params": {t["name"]: t["value"] for t in TOOLS}},
                 },
-                # callers pause mid-story and while reading UTRs: the transcriber waits 1.2 s of silence (endpointing) plus a 1.2 s delay before replying,
+                # callers pause mid-story and while reading UTRs: the transcriber waits 1.6 s of silence (endpointing; 1.2 s still answered half-sentences from the caller bot) plus a 1.2 s delay before replying,
                 # and treat a 1-word sound ("haan", "hmm") as backchannel, not an interruption
                 # a 12 s silence hang-up cut a caller off while reading a UTR (a lost digit group counts as silence):
                 # ask "are you still there?" after 15 s and only hang up after 30 s
