@@ -233,8 +233,26 @@ async def bolna_webhook(req: Request):
                 c["alert"].update(answer="customer made it" if guess else "NOT the customer", answered_at=now(), from_transcript=True)
                 c["status"] = "cleared" if guess else "call_ended"
                 log(c, f"customer's answer read from the transcript: {'made the payment' if guess else 'not me'}")
+    if st in ENDED and c.get("mode") == "alert" and not c.get("consent") and consent_from_transcript(c.get("transcript")):
+        # the agent asked for consent and got a yes but didn't call record_consent (seen in bridge tests)
+        c["consent"] = {"caller_name": c["alert"]["name"], "is_account_holder": True, "account_holder_name": None, "at": now(), "from_transcript": True}
+        log(c, "consent read from the transcript")
     save()
     return {"ok": True}
+
+
+CONSENT_ASK = re.compile(r"note|consent|share|cyber cell", re.I)
+
+
+def consent_from_transcript(transcript) -> bool:
+    """Did the caller say yes right after the agent asked to note and share their details?"""
+    lines = [l.strip() for l in str(transcript or "").splitlines() if l.strip()]
+    for i, line in enumerate(lines):
+        if line.startswith("assistant:") and CONSENT_ASK.search(line) and "?" in line:
+            reply = next((l[5:] for l in lines[i + 1:] if l.startswith("user:")), "")
+            if (YES_WORDS.search(reply) or re.search(r"\b(ok|okay|sure|please|can)\b|ओके|कैन", reply, re.I)) and not NO_WORDS.search(reply):
+                return True
+    return False
 
 
 YES_WORDS = re.compile(r"\b(yes|haan|haa|ha|ji|i did|it was me|maine kiya)\b|हाँ|हां|हा(?![\u0900-\u0963\u0966-\u097F])|जी|येस|यस|आई डिड|मैंने किया", re.I)
