@@ -85,7 +85,7 @@ HELPLINE_CONTEXT = "a helpline callback: the caller asked Saathi to call them ab
 LANGUAGE_MENU = "Aap Hindi mein baat karna chahenge, ya English mein?"
 HELPLINE_OPENING = f"Namaste, main Saathi hoon, online fraud mein madad ke liye ek AI helper. {LANGUAGE_MENU}"
 LANGS = {
-    "hi": {"rule": "Speak Hinglish: everyday Hindi in Roman script, with common English words.",
+    "hi": {"rule": "Speak Hinglish: everyday Hindi in Roman script, with common English words. If the caller keeps answering in English, reply in simple English instead.",
            "question": "Kya yeh payment aapne khud kiya tha, haan ya nahi?",
            "closing": "Theek hai, dhanyavaad. Kabhi bhi kisi ko OTP ya PIN mat batayiye.",
            "goodbye": "Apna dhyan rakhiye. Namaste.", "listen": "haan"},
@@ -125,7 +125,7 @@ def agent_payload():
                     "llm_agent": {
                         "agent_type": "simple_llm_agent",
                         "agent_flow_type": "streaming",
-                        "llm_config": {"provider": "openai", "model": "gpt-4.1-mini", "max_tokens": 200, "temperature": 0.2},
+                        "llm_config": {"provider": "openai", "model": "gpt-4.1-mini", "max_tokens": 100, "temperature": 0.2},
                     },
                     # Sarvam STT/TTS are in Bolna's flat per-minute rate; Kalpa is not listed there
                     "transcriber": transcriber("hi"),
@@ -145,8 +145,9 @@ def agent_payload():
                 # ask "are you still there?" after 15 s and only hang up after 30 s
                 "task_config": {"call_terminate": 480, "hangup_after_silence": 30, "check_if_user_online": True,
                                 "trigger_user_online_message_after": 15, "incremental_delay": 1200,
-                                # 1 word: a caller reading digits ("8885") must be able to cut in
-                                "number_of_words_for_interruption": 1,
+                                # 3 words: with 1, every fragment ("Please help.") cut Saathi off mid-line (70 cut-offs in one bridge test);
+                                # digits said over Saathi got lost either way, and the UTR now falls back to SMS
+                                "number_of_words_for_interruption": 3,
                                 # backchanneling spoke Hindi fillers ("main sun rahi hoon") over English callers' pauses
                                 "backchanneling": False,
                                 # "hang up using a prompt": the model ends the call with Bolna's end-call tool, so the
