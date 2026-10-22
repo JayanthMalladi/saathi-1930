@@ -21,7 +21,8 @@
   </label>
   <label><input type="checkbox" id="listen" checked> Play the call here</label>
 </p>
-<p><button id="start">Start test call</button> <button id="stop" disabled>Stop</button></p>
+<p><button id="start">Start test call</button> <button id="stop" disabled>Stop</button> <button id="auto">Auto mode</button></p>
+<p id="autonote" hidden>Auto mode is on: runs start by themselves when Claude queues them. Leave this tab open and the laptop awake.</p>
 <pre id="log"></pre>
 </main>
 <script>
@@ -39,8 +40,10 @@ navigator.mediaDevices.getUserMedia = async c => {
   return new MediaStream([micFor.stream.getAudioTracks()[0].clone()]);  // the SDK stops its preflight track
 };
 
-let calls = [];
+let calls = [], busy = false, ctx = null, timer = null;
 async function stopAll() {
+  clearTimeout(timer);
+  busy = false;
   await Promise.all(calls.map(c => c.stop().catch(() => {})));
   calls = [];
   document.getElementById('start').disabled = false;
@@ -56,21 +59,23 @@ async function remoteStream(el) {
 }
 
 document.getElementById('stop').onclick = () => { say('stopped'); stopAll(); };
-document.getElementById('start').onclick = async () => {
+async function run(scenario) {
+  busy = true;
   document.getElementById('start').disabled = true;
   document.getElementById('stop').disabled = false;
-  const ctx = new AudioContext();
+  ctx = ctx || new AudioContext();
   await ctx.resume();
+  timer = setTimeout(() => { say('6 minute limit reached, stopping'); stopAll(); }, 6 * 60 * 1000);
   const toSaathi = ctx.createMediaStreamDestination(), toBot = ctx.createMediaStreamDestination();
   const elSaathi = new Audio(), elBot = new Audio();
   elSaathi.muted = elBot.muted = true;  // the mix below goes to the speakers instead
   try {
     say('getting sessions');
     const r = await fetch('/api/bridge', {method: 'POST', headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({token: params.get('token'), botkey: params.get('botkey'), scenario: document.getElementById('scenario').value})});
+      body: JSON.stringify({token: params.get('token'), botkey: params.get('botkey'), scenario})});
     const s = await r.json();
     if (!r.ok) throw new Error(JSON.stringify(s));
-    say(`case ${s.case_id}, Saathi run ${s.saathi.run_id}, bot run ${s.bot.run_id}`);
+    say(`${scenario}: case ${s.case_id}, Saathi run ${s.saathi.run_id}, bot run ${s.bot.run_id}`);
 
     const bot = new BolnaWebCall({session: s.bot, audioElement: elBot, audio: {echoCancellation: false, noiseSuppression: false, autoGainControl: false}});
     const saathi = new BolnaWebCall({session: s.saathi, audioElement: elSaathi, audio: {echoCancellation: false, noiseSuppression: false, autoGainControl: false}});
@@ -95,6 +100,26 @@ document.getElementById('start').onclick = async () => {
     say(`failed: ${e.message || e}`);
     stopAll();
   }
+}
+document.getElementById('start').onclick = () => run(document.getElementById('scenario').value);
+
+// auto mode: poll the server for queued runs (the click unlocks audio for later runs)
+async function poll() {
+  try {
+    const r = await fetch('/api/bridge/next', {method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({token: params.get('token'), state: busy ? 'in_call' : 'idle', log: logEl.textContent})});
+    const j = await r.json();
+    if (j.scenario && !busy) { say(`auto: starting ${j.scenario}`); run(j.scenario); }
+  } catch (e) { /* server restarting; try again */ }
+  setTimeout(poll, 5000);
+}
+document.getElementById('auto').onclick = async () => {
+  ctx = ctx || new AudioContext();
+  await ctx.resume();
+  document.getElementById('auto').disabled = true;
+  document.getElementById('autonote').hidden = false;
+  say('auto mode on');
+  poll();
 };
 </script>
 </body>

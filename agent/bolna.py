@@ -103,7 +103,7 @@ def prompt_for(lang: str) -> str:
 
 
 def transcriber(lang):
-    return {"provider": "sarvam", "model": "saaras:v4", "language": lang, "stream": True, "endpointing": 1200}
+    return {"provider": "sarvam", "model": "saaras:v4", "language": lang, "stream": True, "endpointing": 1600}
 
 
 def synthesizer(lang):
@@ -139,7 +139,7 @@ def agent_payload():
                     "api_tools": {"tools": [{k: v for k, v in t.items() if k != "value"} | {"key": t["key"]} for t in TOOLS],
                                   "tools_params": {t["name"]: t["value"] for t in TOOLS}},
                 },
-                # callers pause mid-story and while reading UTRs: the transcriber waits 1.2 s of silence (endpointing) plus a 1.2 s delay before replying,
+                # callers pause mid-story and while reading UTRs: the transcriber waits 1.6 s of silence (endpointing; 1.2 s still answered half-sentences from the caller bot) plus a 1.2 s delay before replying,
                 # and treat a 1-word sound ("haan", "hmm") as backchannel, not an interruption
                 # a 12 s silence hang-up cut a caller off while reading a UTR (a lost digit group counts as silence):
                 # ask "are you still there?" after 15 s and only hang up after 30 s
@@ -156,7 +156,9 @@ def agent_payload():
                                     "A conversation is considered complete if any of the following conditions are met:\n"
                                     "1. On an alert call, the customer said they made the flagged payment themselves and the assistant "
                                     "has thanked them and reminded them not to share their OTP or PIN.\n"
-                                    "2. The assistant has given the next steps and the caller has no more questions, or says bye, thank you or ok.\n"
+                                    "2. The assistant has finished giving the next steps (call 1930, tell the bank in writing) and the caller has no more questions. "
+                                    "A \"thank you\" or \"ok\" before that point does not end the call: on an alert call where the customer said the payment "
+                                    "was NOT theirs, the call is only complete after the next steps have been given.\n"
                                     "3. The call is a prank or not about fraud, and the assistant has closed it politely."),
                                 # the goodbye is Bolna's hang-up message (per language); the prompt doesn't say its own
                                 "call_hangup_message": {k: v["goodbye"] for k, v in LANGS.items()}, "dtmf_enabled": False},
