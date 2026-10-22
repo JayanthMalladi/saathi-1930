@@ -156,7 +156,9 @@ def agent_payload():
                                     "A conversation is considered complete if any of the following conditions are met:\n"
                                     "1. On an alert call, the customer said they made the flagged payment themselves and the assistant "
                                     "has thanked them and reminded them not to share their OTP or PIN.\n"
-                                    "2. The assistant has given the next steps and the caller has no more questions, or says bye, thank you or ok.\n"
+                                    "2. The assistant has finished giving the next steps (call 1930, tell the bank in writing) and the caller has no more questions. "
+                                    "A \"thank you\" or \"ok\" before that point does not end the call: on an alert call where the customer said the payment "
+                                    "was NOT theirs, the call is only complete after the next steps have been given.\n"
                                     "3. The call is a prank or not about fraud, and the assistant has closed it politely."),
                                 # the goodbye is Bolna's hang-up message (per language); the prompt doesn't say its own
                                 "call_hangup_message": {k: v["goodbye"] for k, v in LANGS.items()}, "dtmf_enabled": False},

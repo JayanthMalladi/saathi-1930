@@ -49,6 +49,7 @@ Play this person, and stay in character the whole call:
 
 How to talk:
 - You are on a phone call. Say only your own words: one or two short spoken sentences per turn, no lists, no stage directions.
+- Let them finish. If what you heard sounds cut off or unfinished, reply only "hmm" and wait.
 - Answer only what you were asked. Don't volunteer every detail at once; give details when asked for them.
 - Never act like a helper or assistant, never ask "how can I help", and never say you are an AI or a test.
 - If they tell you to do something (hang up the other call, uninstall an app), say you have done it.
@@ -77,14 +78,14 @@ def payload(lang):
                 "tools_config": {
                     "llm_agent": {"agent_type": "simple_llm_agent", "agent_flow_type": "streaming",
                                   "llm_config": {"provider": "openai", "model": "gpt-4.1-mini", "max_tokens": 120, "temperature": 0.6}},
-                    "transcriber": {"provider": "sarvam", "model": "saaras:v4", "language": lang, "stream": True, "endpointing": 900},
+                    "transcriber": {"provider": "sarvam", "model": "saaras:v4", "language": lang, "stream": True, "endpointing": 2000},
                     "synthesizer": voice,
                     "input": {"provider": "default", "format": "wav"},
                     "output": {"provider": "default", "format": "wav"},
                     "api_tools": None,
                 },
                 "task_config": {"call_terminate": 480, "hangup_after_silence": 40, "check_if_user_online": False,
-                                "backchanneling": False, "number_of_words_for_interruption": 3,
+                                "backchanneling": False, "number_of_words_for_interruption": 4, "incremental_delay": 1500,
                                 "hangup_after_LLMCall": True,
                                 "call_cancellation_prompt": "The conversation is complete when the other side has said goodbye or ended the conversation."},
             }],
