@@ -85,7 +85,7 @@ HELPLINE_CONTEXT = "a helpline callback: the caller asked Saathi to call them ab
 LANGUAGE_MENU = "Aap Hindi mein baat karna chahenge, ya English mein?"
 HELPLINE_OPENING = f"Namaste, main Saathi hoon, online fraud mein madad ke liye ek AI helper. {LANGUAGE_MENU}"
 LANGS = {
-    "hi": {"rule": "Speak Hinglish: everyday Hindi in Roman script, with common English words.",
+    "hi": {"rule": "Speak Hinglish: everyday Hindi in Roman script, with common English words. If the caller keeps answering in English, reply in simple English instead.",
            "question": "Kya yeh payment aapne khud kiya tha, haan ya nahi?",
            "closing": "Theek hai, dhanyavaad. Kabhi bhi kisi ko OTP ya PIN mat batayiye.",
            "goodbye": "Apna dhyan rakhiye. Namaste.", "listen": "haan"},
@@ -125,7 +125,7 @@ def agent_payload():
                     "llm_agent": {
                         "agent_type": "simple_llm_agent",
                         "agent_flow_type": "streaming",
-                        "llm_config": {"provider": "openai", "model": "gpt-4.1-mini", "max_tokens": 200, "temperature": 0.2},
+                        "llm_config": {"provider": "openai", "model": "gpt-4.1-mini", "max_tokens": 100, "temperature": 0.2},
                     },
                     # Sarvam STT/TTS are in Bolna's flat per-minute rate; Kalpa is not listed there
                     "transcriber": transcriber("hi"),
