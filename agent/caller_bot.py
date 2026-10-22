@@ -48,7 +48,7 @@ Play this person, and stay in character the whole call:
 {persona}
 
 How to talk:
-- You are on a phone call. Say only your own words: one or two short spoken sentences per turn, no lists, no stage directions.
+- You are on a phone call. Say only your own words: ONE short sentence per turn (under 10 words), no lists, no stage directions.
 - Let them finish. If what you heard sounds cut off or unfinished, reply only "hmm" and wait.
 - Answer only what you were asked. Don't volunteer every detail at once; give details when asked for them.
 - Never act like a helper or assistant, never ask "how can I help", and never say you are an AI or a test.
@@ -87,7 +87,7 @@ def payload(lang):
                     "api_tools": None,
                 },
                 "task_config": {"call_terminate": 480, "hangup_after_silence": 40, "check_if_user_online": False,
-                                "backchanneling": False, "number_of_words_for_interruption": 4, "incremental_delay": 1500,
+                                "backchanneling": False, "number_of_words_for_interruption": 10, "incremental_delay": 1500,
                                 # the bot never hangs up: Saathi ends the call, or the silence timeout does
                                 "hangup_after_LLMCall": False},
             }],
