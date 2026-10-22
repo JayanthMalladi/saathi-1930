@@ -145,8 +145,9 @@ def agent_payload():
                 # ask "are you still there?" after 15 s and only hang up after 30 s
                 "task_config": {"call_terminate": 480, "hangup_after_silence": 30, "check_if_user_online": True,
                                 "trigger_user_online_message_after": 15, "incremental_delay": 1200,
-                                # 1 word: a caller reading digits ("8885") must be able to cut in
-                                "number_of_words_for_interruption": 1,
+                                # 3 words: with 1, every fragment ("Please help.") cut Saathi off mid-line (70 cut-offs in one bridge test);
+                                # digits said over Saathi got lost either way, and the UTR now falls back to SMS
+                                "number_of_words_for_interruption": 3,
                                 # backchanneling spoke Hindi fillers ("main sun rahi hoon") over English callers' pauses
                                 "backchanneling": False,
                                 # "hang up using a prompt": the model ends the call with Bolna's end-call tool, so the
