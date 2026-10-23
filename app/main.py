@@ -237,6 +237,15 @@ async def bolna_webhook(req: Request):
         # the agent asked for consent and got a yes but didn't call record_consent (seen in bridge tests)
         c["consent"] = {"caller_name": c["alert"]["name"], "is_account_holder": True, "account_holder_name": None, "at": now(), "from_transcript": True}
         log(c, "consent read from the transcript")
+    if (st in ENDED and c.get("mode") == "alert" and c.get("consent") and c["status"] != "submitted"
+            and (c.get("alert") or {}).get("answer") == "NOT the customer"):
+        # the agent told the caller it was submitting but never called submit_case (seen in bridge tests):
+        # file what the case already holds so it still reaches the bank queue
+        c["complaint"] = {"fraud_type": "Reported on alert call", "description": "Filed after the call from the case and transcript; the agent did not submit it.",
+                          "mobile": c.get("caller_phone"), **{k: v for k, v in (c.get("complaint") or {}).items() if v}}
+        c["status"], c["submitted_at"] = "submitted", now()
+        log(c, "complaint filed from the call record (agent skipped submit_case)")
+        c["sms"] = sms_text(c)
     save()
     return {"ok": True}
 

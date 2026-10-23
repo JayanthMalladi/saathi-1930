@@ -51,7 +51,7 @@ def tool(name, description, props, required, path, pre_call=None):
         },
     }
     if pre_call:
-        t["pre_call_message"] = pre_call
+        t["pre_call_message"] = t["value"]["pre_call_message"] = pre_call
     return t
 
 
@@ -61,18 +61,18 @@ TOOLS = [
          "Call once the caller agrees that their details can be noted and shared with the cyber cell and their bank.",
          {"caller_name": S, "is_account_holder": {"type": "boolean"},
           "account_holder_name": {"type": "string", "description": "Only if the caller is calling for someone else"}},
-         ["caller_name", "is_account_holder"], "/api/consent"),
+         ["caller_name", "is_account_holder"], "/api/consent", pre_call="Okay."),
     tool("add_transaction",
          "Call after the caller confirms one fraudulent debit: amount, UTR or transaction ID, app, bank and time. Call once per debit.",
          {"amount_inr": {"type": "number"}, "utr_or_ref": S,
           "mode": {"type": "string", "enum": ["UPI", "IMPS", "NEFT", "Card", "Wallet", "Other"]},
           "app": S, "bank": S, "datetime": {"type": "string", "description": "YYYY-MM-DD HH:MM"}},
-         ["amount_inr", "mode", "bank"], "/api/transaction"),
+         ["amount_inr", "mode", "bank"], "/api/transaction", pre_call="Okay."),
     tool("submit_case",
          "Call when all details are collected and the caller has confirmed the read-back summary.",
          {"mobile": S, "fraud_type": S, "incident_datetime": S, "description": S,
           "suspect_phone": S, "suspect_vpa_or_account": S, "language": S},
-         ["fraud_type", "description"], "/api/submit"),
+         ["fraud_type", "description"], "/api/submit", pre_call="Okay."),
 ]
 
 # Every call is placed with user_data filling these (see app/main.py): {opening} is the first line Saathi says,
