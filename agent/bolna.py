@@ -107,7 +107,8 @@ def transcriber(lang):
 
 
 def synthesizer(lang):
-    return {"provider": "sarvam", "stream": True, "buffer_size": 150,
+    # 250 characters: a whole short reply is voiced in one piece, so its tone doesn't jump between chunks
+    return {"provider": "sarvam", "stream": True, "buffer_size": 250,
             "provider_config": {"voice": "Priya", "voice_id": "priya", "model": "bulbul:v3", "language": lang, "speed": 1.0}}
 
 
@@ -125,7 +126,8 @@ def agent_payload():
                     "llm_agent": {
                         "agent_type": "simple_llm_agent",
                         "agent_flow_type": "streaming",
-                        "llm_config": {"provider": "openai", "model": "gpt-4.1-mini", "max_tokens": 100, "temperature": 0.2},
+                        # 300: at 100 a submit_case call with a description got cut off, and the agent told the caller "technical issue"
+                        "llm_config": {"provider": "openai", "model": "gpt-4.1-mini", "max_tokens": 300, "temperature": 0.2},
                     },
                     # Sarvam STT/TTS are in Bolna's flat per-minute rate; Kalpa is not listed there
                     "transcriber": transcriber("hi"),
