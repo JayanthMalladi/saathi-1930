@@ -77,7 +77,7 @@ function CallCard() {
       </div>
       <div className="slot">
         {recording
-          ? "// audio: the Bolna recording, Saathi and a synthetic caller"
+          ? "// audio: reenactment. Saathi's real lines in her Bolna voice (Sarvam bulbul Priya); caller voiced by Sarvam"
           : `// no recording loaded: a ${BEATS.length}-line replay of the real call flow on a simulated clock`}
       </div>
     </div>

@@ -119,7 +119,7 @@ export default function JudgeConsole() {
 
       {/* the three rungs */}
       <div className="mt-4 grid gap-4 md:grid-cols-3">
-        <RungCard n={1} title="Replay" tag="safe · always works" desc="The simulated Saathi ↔ Rohit call with the complaint draft printing. No backend, no phone, no credit.">
+        <RungCard n={1} title="Replay" tag="safe · always works" desc="The reenacted Saathi ↔ Rohit call (her real lines and voice) with the complaint draft printing. No backend, no phone, no credit.">
           <button
             className="btn-b btn-b--go w-full"
             onClick={() => {

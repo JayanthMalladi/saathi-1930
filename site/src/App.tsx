@@ -50,7 +50,7 @@ function StatusLine() {
   const { recording } = useCallEngine();
   return (
     <div className="status">
-      <span className="rec-dot c-red">{recording ? "REC · recorded call, synthetic data" : "REPLAY · simulated call, synthetic data"}</span>
+      <span className="rec-dot c-red">{recording ? "REENACTMENT · Saathi's real lines and voice, synthetic data" : "REPLAY · simulated call, synthetic data"}</span>
       <span>Bolna Symphony Buildathon · voice entry</span>
       <span>
         <b>Demo Wallet</b> is fictional · UTRs start 9999

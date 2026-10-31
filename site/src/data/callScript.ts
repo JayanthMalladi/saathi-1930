@@ -4,7 +4,11 @@
 // One clock drives the whole page: the in-call timer, waveform, transcript highlight and the receipt all read
 // the current time and look up the beat whose `t` (seconds from call start) has most recently passed.
 //
-// Swapping in the real recording:
+// The audio at site/public/call.mp3 is a reenactment, not a live call: Saathi's lines exactly as the agent says them,
+// voiced with her Bolna voice (Sarvam bulbul:v3 "Priya") through Sarvam's TTS API, and the caller voiced by Sarvam "Rahul".
+// The `t` values below are where each line starts in that file.
+//
+// Swapping in a different recording:
 //   1. Put the Bolna recording at site/public/call.mp3 (it is not in the repo; vite.config.ts checks for it at
 //      dev/build start, so restart `npm run dev` / re-run `npm run build` after adding it).
 //   2. Replace each beat's `t` below with the second that line starts in the recording, and set CALL_TOTAL to
@@ -54,14 +58,14 @@ export const BEATS: Beat[] = [
     speaker: "saathi",
     text: "Namaste Rohit, main Saathi hoon, Demo Wallet ki fraud team se, aapke account ki ek payment ke baare mein. Aap Hindi mein baat karna chahenge, ya English mein?",
     hi: "नमस्ते रोहित, मैं साथी हूँ, Demo Wallet की फ़्रॉड टीम से, आपके अकाउंट की एक पेमेंट के बारे में। आप हिंदी में बात करना चाहेंगे, या English में?",
-    t: 0,
+    t: 0.0,
   },
-  { id: "lang", speaker: "rohit", text: "English.", t: 7, form: { incident: { language: "English" } } },
+  { id: "lang", speaker: "rohit", text: "English.", t: 10.0, form: { incident: { language: "English" } } },
   {
     id: "alert",
     speaker: "saathi",
     text: "Rs 18,000 was paid to refund.help@ybl at 14:53 today from your Demo Wallet. Did you make this payment yourself, yes or no?",
-    t: 9,
+    t: 11.1,
     note: "the bank already knows this debit — Saathi never asks for its details",
     form: {
       txn: { amount: 18000, mode: "UPI", utr: "on file with the bank", app: "Demo Wallet", bank: "Demo Wallet", time: "14:53", known: true },
@@ -73,54 +77,54 @@ export const BEATS: Beat[] = [
     id: "no",
     speaker: "rohit",
     text: "No, I didn't. A man called as customer care and made me install AnyDesk.",
-    t: 15,
+    t: 21.5,
     form: { incident: { fraudType: "Fake customer care · remote app" } },
   },
   {
     id: "hangup",
     speaker: "saathi",
     text: "Please hang up the scammer's call and close any remote app now. Done?",
-    t: 18,
+    t: 27.0,
     note: "safety step first — the scammer may still be on the line",
   },
-  { id: "hangup-ok", speaker: "rohit", text: "Done.", t: 22 },
+  { id: "hangup-ok", speaker: "rohit", text: "Done.", t: 32.3 },
   {
     id: "consent",
     speaker: "saathi",
     text: "I am an AI helper, not police or bank; may I note your details and share with cyber cell and bank?",
-    t: 24,
+    t: 33.3,
   },
   {
     id: "consent-ok",
     speaker: "rohit",
     text: "Yes, please.",
-    t: 28,
+    t: 41.2,
     tool: "record_consent",
     form: { consent: { name: "Rohit", isAccountHolder: true } },
   },
-  { id: "other-debits", speaker: "saathi", text: "Did any other money leave your account, Rohit?", t: 31 },
+  { id: "other-debits", speaker: "saathi", text: "Did any other money leave your account, Rohit?", t: 42.5 },
   {
     id: "other-debits-ok",
     speaker: "rohit",
     text: "Yes, Rs 10,000 more, on Google Pay, from HDFC Bank, at 9:44 pm.",
-    t: 33,
+    t: 44.9,
   },
   {
     id: "utr-ask",
     speaker: "saathi",
     text: "Please read that debit's transaction number, four digits at a time. I will wait.",
-    t: 36,
+    t: 52.4,
   },
-  { id: "utr-1", speaker: "rohit", text: "9999.", t: 40, utr: [{ digits: "9999", echo: "9 9 9 9" }] },
-  { id: "utr-1-echo", speaker: "saathi", text: "9 9 9 9.", t: 42 },
-  { id: "utr-2", speaker: "rohit", text: "8885.", t: 44, utr: [{ digits: "8885", echo: "8 8 8 5" }] },
-  { id: "utr-2-echo", speaker: "saathi", text: "8 8 8 5.", t: 46 },
-  { id: "utr-3", speaker: "rohit", text: "9278.", t: 49, utr: [{ digits: "9278", echo: "9 2 7 8" }] },
+  { id: "utr-1", speaker: "rohit", text: "9999.", t: 59.1, utr: [{ digits: "9999", echo: "9 9 9 9" }] },
+  { id: "utr-1-echo", speaker: "saathi", text: "9 9 9 9.", t: 60.9 },
+  { id: "utr-2", speaker: "rohit", text: "8885.", t: 62.5, utr: [{ digits: "8885", echo: "8 8 8 5" }] },
+  { id: "utr-2-echo", speaker: "saathi", text: "8 8 8 5.", t: 64.1 },
+  { id: "utr-3", speaker: "rohit", text: "9278.", t: 66.4, utr: [{ digits: "9278", echo: "9 2 7 8" }] },
   {
     id: "utr-3-echo",
     speaker: "saathi",
     text: "9 2 7 8. That is the full 12 digits, saved.",
-    t: 51,
+    t: 68.3,
     tool: "add_transaction",
     form: {
       txn: { amount: 10000, mode: "UPI", utr: "9999 8885 9278", app: "Google Pay", bank: "HDFC Bank", time: "21:44" },
@@ -130,64 +134,64 @@ export const BEATS: Beat[] = [
     id: "access",
     speaker: "saathi",
     text: "How did the scammer get in? Did you share an OTP, install an app, or take a call?",
-    t: 53,
+    t: 72.6,
   },
   {
     id: "access-ok",
     speaker: "rohit",
     text: "I installed AnyDesk.",
-    t: 57,
+    t: 79.0,
     form: { incident: { description: "Installed AnyDesk at the fake customer care caller's request" } },
   },
   {
     id: "advice",
     speaker: "saathi",
     text: "Please uninstall AnyDesk, then change your UPI PIN from a safe phone.",
-    t: 59,
+    t: 80.7,
   },
   {
     id: "suspect",
     speaker: "saathi",
     text: "What is the scammer's phone number? Five digits at a time, please.",
-    t: 63,
+    t: 86.2,
   },
-  { id: "suspect-1", speaker: "rohit", text: "90000.", t: 66, phone: "90000" },
-  { id: "suspect-1-echo", speaker: "saathi", text: "9 0 0 0 0.", t: 68 },
-  { id: "suspect-2", speaker: "rohit", text: "68912.", t: 70, phone: "68912" },
+  { id: "suspect-1", speaker: "rohit", text: "90000.", t: 90.7, phone: "90000" },
+  { id: "suspect-1-echo", speaker: "saathi", text: "9 0 0 0 0.", t: 92.7 },
+  { id: "suspect-2", speaker: "rohit", text: "68912.", t: 95.6, phone: "68912" },
   {
     id: "suspect-2-echo",
     speaker: "saathi",
     text: "6 8 9 1 2.",
-    t: 72,
+    t: 97.6,
     form: { suspect: { phone: "+91 90000 68912" } },
   },
   {
     id: "submit",
     speaker: "saathi",
     text: "Rohit, you lost Rs 18,000 and Rs 10,000, and installed AnyDesk. I will submit your case to the bank now.",
-    t: 74,
+    t: 99.8,
     tool: "submit_case",
     form: { submitted: true },
   },
-  { id: "next-1930", speaker: "saathi", text: "Please call 1930 now, or file at cybercrime.gov.in.", t: 79 },
+  { id: "next-1930", speaker: "saathi", text: "Please call 1930 now, or file at cybercrime.gov.in.", t: 108.8 },
   {
     id: "next-bank",
     speaker: "saathi",
     text: "Tell your bank in writing today; protection is strongest within 3 working days.",
-    t: 82,
+    t: 114.0,
   },
   {
     id: "next-keep",
     speaker: "saathi",
     text: "Keep all screenshots and chats, and never share your OTP or PIN.",
-    t: 86,
+    t: 119.3,
   },
-  { id: "thanks", speaker: "rohit", text: "Okay, thank you.", t: 89 },
-  { id: "bye", speaker: "saathi", text: "Take care, Rohit, and stay safe.", t: 91 },
+  { id: "thanks", speaker: "rohit", text: "Okay, thank you.", t: 124.2 },
+  { id: "bye", speaker: "saathi", text: "Take care, Rohit, and stay safe.", t: 126.0 },
 ];
 
 /** length of the call in seconds (the last line ends a little before this) */
-export const CALL_TOTAL = 94;
+export const CALL_TOTAL = 129;
 
 /** where the page opens, paused: just after the second UTR group, so the receipt is half printed */
 export const PREVIEW_T = 47;
