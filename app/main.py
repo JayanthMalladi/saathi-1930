@@ -13,6 +13,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 from fastapi import FastAPI, Header, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from html import escape
 from fastapi.staticfiles import StaticFiles
@@ -28,6 +29,17 @@ import simulate  # noqa: E402
 
 app = FastAPI(title="Saathi 1930 backend")
 app.mount("/static", StaticFiles(directory=HERE / "static"), name="static")
+
+# The judge demo console (site/) fetches /api/case/* and POSTs /api/alert-call from its own
+# origin, so allow cross-origin reads. The API is token-gated, not cookie-authed, so a
+# permissive allow-origin is safe here. Pin specific origins in production via CORS_ORIGINS.
+_CORS = os.environ.get("CORS_ORIGINS", "*")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_CORS.split(",") if _CORS != "*" else ["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 cases: dict[str, dict] = json.loads(STORE.read_text()) if STORE.exists() else {}
 latest_id: str | None = max(cases, key=lambda k: cases[k]["created_at"]) if cases else None
 ORG = os.environ.get("ORG_NAME", "Demo Wallet")  # the made-up fintech whose fraud team uses Saathi in the demo
@@ -451,7 +463,19 @@ async def alert_call(req: Request):
     admin(b.get("token"))
     phone = check_phone(b.get("phone"))
     c, user_data = alert_case(phone, b.get("name"), b.get("amount"), b.get("payee"))
-    return place_call(c, user_data)
+    # place_call returns the Bolna response dict on success, a JSONResponse on failure: report what
+    # the case knows, and on failure Bolna's own error (a trial account can only dial verified numbers)
+    out = place_call(c, user_data)
+    placed = isinstance(out, dict)
+    res = {"case_id": c["id"], "status": c.get("status"), "placed": placed,
+           "execution_id": c.get("execution_id"), "caller": c.get("caller_phone")}
+    if not placed:
+        try:
+            body = json.loads(out.body)
+        except (AttributeError, ValueError):
+            body = {}
+        res["error"] = str(body.get("bolna_error") or body or "Bolna did not accept the call")
+    return res
 
 
 @app.get("/bridge")
