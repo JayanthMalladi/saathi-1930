@@ -1,36 +1,49 @@
 import { useCallback, useEffect, useState } from "react";
 
-export type Theme = "noir" | "saathi" | "ops";
+// Light / dark. With nothing chosen the page follows prefers-color-scheme (pure CSS, see styles.css);
+// a choice made with the toggle is kept in localStorage and set as data-theme on <html>.
+// index.html applies a saved choice before first paint so there is no flash.
+export type Theme = "light" | "dark";
 
-export const THEMES: { id: Theme; label: string; blurb: string }[] = [
-  { id: "noir", label: "Noir", blurb: "dark cinematic" },
-  { id: "saathi", label: "Saathi", blurb: "light & calm" },
-  { id: "ops", label: "Ops", blurb: "mission control" },
-];
+const KEY = "saathi-theme";
 
-const DEFAULT: Theme = "saathi";
-
-function readFromHash(): Theme {
-  const m = window.location.hash.match(/theme=([a-z]+)/);
-  const t = m?.[1] as Theme | undefined;
-  return t && THEMES.some((x) => x.id === t) ? t : DEFAULT;
+function systemTheme(): Theme {
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
-export function applyTheme(t: Theme) {
-  document.documentElement.setAttribute("data-theme", t);
+function saved(): Theme | null {
+  try {
+    const v = localStorage.getItem(KEY);
+    return v === "light" || v === "dark" ? v : null;
+  } catch {
+    return null;
+  }
 }
 
 export function useTheme() {
-  const [theme, setThemeState] = useState<Theme>(readFromHash);
+  const [choice, setChoice] = useState<Theme | null>(saved);
+  const [system, setSystem] = useState<Theme>(systemTheme);
 
   useEffect(() => {
-    applyTheme(theme);
-    // keep the theme in the hash so a reloaded / shared link preserves it.
-    // replaceState keeps it a same-page change and writes a clean #theme=X,
-    // so the URL can never accumulate a corrupted fragment.
-    window.history.replaceState(null, "", `${location.pathname}${location.search}#theme=${theme}`);
-  }, [theme]);
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const on = () => setSystem(mq.matches ? "dark" : "light");
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  }, []);
 
-  const setTheme = useCallback((t: Theme) => setThemeState(t), []);
+  useEffect(() => {
+    const root = document.documentElement;
+    if (choice) root.setAttribute("data-theme", choice);
+    else root.removeAttribute("data-theme");
+    try {
+      if (choice) localStorage.setItem(KEY, choice);
+      else localStorage.removeItem(KEY);
+    } catch {
+      /* storage blocked: the choice just lasts for this visit */
+    }
+  }, [choice]);
+
+  const theme = choice ?? system;
+  const setTheme = useCallback((t: Theme) => setChoice(t), []);
   return { theme, setTheme };
 }

@@ -1,47 +1,38 @@
 import { useMemo } from "react";
+import { BEATS, beatAt } from "../data/callScript";
+import { useCallEngine } from "../engine/CallEngine";
 
-// A voice waveform strip. When `active`, bars animate (a speaking voice); when idle,
-// they rest at a low baseline. Uses the theme accent.
-export default function Waveform({
-  active,
-  bars = 36,
-  height = 40,
-  className = "",
-  seed = 1,
-}: {
-  active: boolean;
-  bars?: number;
-  height?: number;
-  className?: string;
-  seed?: number;
-}) {
-  const phases = useMemo(
-    () => Array.from({ length: bars }, (_, i) => (i * 1.7 + seed) % (Math.PI * 2)),
-    [bars, seed]
-  );
+// Deterministic bars across the whole call: Saathi's turns louder (ink), Rohit's quieter (red).
+// Bars up to the current time are lit; clicking seeks.
+export default function Waveform({ bars = 80 }: { bars?: number }) {
+  const { time, total, seek } = useCallEngine();
+
+  const shape = useMemo(() => {
+    let seed = 7;
+    return Array.from({ length: bars }, (_, i) => {
+      seed = (seed * 9301 + 49297) % 233280;
+      const r = seed / 233280;
+      const at = (i / bars) * total;
+      const who = BEATS[beatAt(at)].speaker;
+      return { at, who, h: who === "saathi" ? 30 + r * 70 : 15 + r * 45 };
+    });
+  }, [bars, total]);
 
   return (
-    <div
-      className={`flex items-center gap-[3px] ${className}`}
-      style={{ height, width: bars * 7 }}
-      aria-hidden
+    <button
+      type="button"
+      className="wave"
+      aria-label="Seek in the call"
+      onClick={(e) => {
+        const r = e.currentTarget.getBoundingClientRect();
+        seek(((e.clientX - r.left) / r.width) * total);
+      }}
     >
-      {phases.map((ph, i) => (
-        <span
-          key={i}
-          className="w-[3px] rounded-full"
-          style={{
-            background: "var(--accent)",
-            height: active ? "100%" : `${18 + (ph % 14)}%`,
-            animation: active ? `wf ${0.9 + (ph % 0.9).toFixed(2)}s ease-in-out ${ph}s infinite` : "none",
-            transform: active ? "scaleY(1)" : `scaleY(0.25)`,
-            transformOrigin: "center",
-            opacity: active ? 1 : 0.4,
-            transition: "height .4s, opacity .4s",
-          }}
-        />
-      ))}
-      <style>{`@keyframes wf {0%,100%{transform:scaleY(.3)}50%{transform:scaleY(1)}}`}</style>
-    </div>
+      {shape.map((b, i) => {
+        const on = b.at <= time;
+        const now = on && (i + 1 >= bars || shape[i + 1].at > time);
+        return <i key={i} className={`wv wv--${b.who}${on ? " on" : ""}${now ? " now" : ""}`} style={{ height: `${b.h.toFixed(0)}%` }} />;
+      })}
+    </button>
   );
 }

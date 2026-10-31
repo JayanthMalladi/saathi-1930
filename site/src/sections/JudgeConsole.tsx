@@ -1,18 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  Play,
-  Cpu,
-  PhoneCall,
-  Settings2,
-  ChevronDown,
-  Link2,
-  Circle,
-  Loader2,
-  KeyRound,
-  Check,
-  Info,
-} from "lucide-react";
+import { Play, Cpu, PhoneCall, ChevronDown, Loader2 } from "lucide-react";
 import { useJudgeSettings } from "../lib/JudgeSettings";
 import { api } from "../lib/backend";
 import { useCallEngine } from "../engine/CallEngine";
@@ -47,8 +35,10 @@ export default function JudgeConsole() {
   // ---- rung 3: dial a real number (alert call). The response now carries the case id. ----
   async function runPhone() {
     if (!settingsReady) return;
-    const phoneClean = "+91" + phone.replace(/\D/g, "").slice(-10); // backend wants +91XXXXXXXXXX
-    if (phoneClean.length < 10) {
+    // backend wants +91XXXXXXXXXX: accept "+91 98…", "098…" or a bare 10-digit mobile
+    const digits = phone.replace(/\D/g, "").replace(/^(91|0)(?=\d{10}$)/, "");
+    const phoneClean = "+91" + digits;
+    if (digits.length !== 10) {
       setRun({ rung: 3, msg: "Enter a full Indian mobile in +91XXXXXXXXXX form." });
       return;
     }
@@ -76,53 +66,28 @@ export default function JudgeConsole() {
   const trackedCaseId = run?.caseId;
 
   return (
-    <section id="demo" className="relative mx-auto max-w-6xl px-6 py-24">
-      <motion.div
-        initial={{ opacity: 0, y: 24 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: "-80px" }}
-        transition={{ duration: 0.6 }}
-        className="mb-8 max-w-2xl"
-      >
-        <span className="tag tag--accent">
-          <Circle size={9} className="dot-live" /> JUDGE DEMO
-        </span>
-        <h2 className="font-display mt-4 text-3xl font-bold sm:text-4xl">
-          Run the live demo in front of the judges.
-        </h2>
-        <p className="mt-3 text-[15px] leading-relaxed text-muted">
-          Three rungs, safest first. Start on <b>Replay</b> (always works), move to <b>Bridge</b> (two real AI
-          voices), then end on <b>Phone</b> — Saathi dials a judge's number and the complaint fills in live. The
-          panel below tracks the <b>real</b> backend case.
-        </p>
-      </motion.div>
+    <section id="demo" className="sect">
+      <h2 className="h2">Judge demo console</h2>
+      <p className="h2-sub max-w-[60em]">
+        Three rungs, safest first. Start on Replay (always works), move to Bridge (two real AI voices), then end on
+        Phone: Saathi dials a verified number and the complaint fills in live. The panel below tracks the real backend
+        case.
+      </p>
 
-      {/* settings bar */}
-      <div className="surface overflow-hidden rounded-2xl">
-        <button
-          onClick={() => setSettingsOpen((v) => !v)}
-          className="flex w-full items-center justify-between gap-3 p-4 text-left"
-        >
-          <div className="flex items-center gap-3">
-            <div className="grid size-9 place-items-center rounded-xl" style={{ background: "var(--glow-soft)" }}>
-              <KeyRound size={17} className="accent" />
-            </div>
-            <div>
-              <p className="text-[14px] font-semibold">
-                {settingsReady ? "Backend connected" : "Backend not configured yet"}
-                <span className="ml-2 text-[12px] text-muted">
-                  {s.backend.replace(/^https?:\/\//, "")} · token {s.token ? "set" : "missing"}
-                </span>
-              </p>
-              <p className="text-[12px] text-muted">The demo calls your real backend. Keys stay in this browser only.</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            {settingsReady && <Check size={16} style={{ color: "var(--ok)" }} />}
-            <span className="text-[13px] text-muted flex items-center gap-1">
-              <Settings2 size={15} /> Settings <ChevronDown size={14} className={settingsOpen ? "rotate-180 transition-transform" : "transition-transform"} />
+      {/* settings */}
+      <div className="box">
+        <button onClick={() => setSettingsOpen((v) => !v)} className="flex w-full flex-wrap items-center justify-between gap-2 p-4 text-left" aria-expanded={settingsOpen}>
+          <span className="min-w-0">
+            <span className="block text-[14px] font-bold">
+              <span className={settingsReady ? "c-green" : "c-red"}>●</span> {settingsReady ? "Backend connected" : "Backend not configured yet"}
             </span>
-          </div>
+            <span className="block text-[12px] text-mute" style={{ overflowWrap: "anywhere" }}>
+              {s.backend.replace(/^https?:\/\//, "")} · token {s.token ? "set" : "missing"} · keys stay in this browser only
+            </span>
+          </span>
+          <span className="flex items-center gap-1 text-[13px] text-mute">
+            [ settings <ChevronDown size={14} className={settingsOpen ? "rotate-180 transition-transform" : "transition-transform"} /> ]
+          </span>
         </button>
 
         <AnimatePresence>
@@ -131,23 +96,19 @@ export default function JudgeConsole() {
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              className="overflow-hidden border-t"
-              style={{ borderColor: "var(--line)" }}
+              className="overflow-hidden"
+              style={{ borderTop: "1px dashed var(--line)" }}
             >
               <div className="grid gap-4 p-4 sm:grid-cols-2">
                 <Field label="Backend URL" hint="your Render deploy (or http://localhost:8000)" value={s.backend} onChange={(v) => set({ backend: v })} placeholder="https://saathi-1930.onrender.com" />
                 <Field label="BACKEND_TOKEN" hint="same value the backend runs with" value={s.token} onChange={(v) => set({ token: v })} placeholder="••••••••" />
                 <Field label="Caller-bot Bolna key (BOT_API_KEY)" hint="the 2nd account that hosts the voice test callers" value={s.botKey} onChange={(v) => set({ botKey: v })} placeholder="bn-…" />
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[12px] font-semibold text-muted">Bridge scenario</label>
-                  <select
-                    value={s.scenario}
-                    onChange={(e) => set({ scenario: e.target.value })}
-                    className="surface2 hairline rounded-lg px-3 py-2.5 text-[14px] outline-none focus:border-[var(--accent)]"
-                  >
-                    <option value="rohit">Rohit — English, “no”, AnyDesk + 2nd debit</option>
-                    <option value="sunita">Sunita — Hindi, “no”, shared OTP</option>
-                    <option value="priya">Priya — English, “yes” (cleared)</option>
+                <div className="flex min-w-0 flex-col gap-1.5">
+                  <label className="text-[12px] text-mute" htmlFor="scenario">Bridge scenario</label>
+                  <select id="scenario" value={s.scenario} onChange={(e) => set({ scenario: e.target.value })} className="field-b">
+                    <option value="rohit">Rohit: English, “no”, AnyDesk + 2nd debit</option>
+                    <option value="sunita">Sunita: Hindi, “no”, shared OTP</option>
+                    <option value="priya">Priya: English, “yes” (cleared)</option>
                   </select>
                 </div>
               </div>
@@ -157,39 +118,30 @@ export default function JudgeConsole() {
       </div>
 
       {/* the three rungs */}
-      <div className="mt-5 grid gap-4 md:grid-cols-3">
-        {/* Rung 1 */}
-        <RungCard
-          n={1}
-          title="Replay"
-          tag="safe · always works"
-          desc="The simulated Saathi ↔ Rohit call with the complaint filling in. No backend, no phone, no credit."
-          accent
-        >
-          <button className="btn btn--primary w-full justify-center" onClick={() => { eng.replay(); document.getElementById("call")?.scrollIntoView({ behavior: "smooth" }); }}>
-            <Play size={15} /> Play the replay
+      <div className="mt-4 grid gap-4 md:grid-cols-3">
+        <RungCard n={1} title="Replay" tag="safe · always works" desc="The simulated Saathi ↔ Rohit call with the complaint draft printing. No backend, no phone, no credit.">
+          <button
+            className="btn-b btn-b--go w-full"
+            onClick={() => {
+              eng.replay();
+              document.getElementById("record")?.scrollIntoView({ behavior: "smooth" });
+            }}
+          >
+            <Play size={15} fill="currentColor" /> PLAY THE REPLAY
           </button>
         </RungCard>
 
-        {/* Rung 2 */}
-        <RungCard n={2} title="Two-voice bridge" tag="real voices · no phone" desc="Saathi and a synthetic caller hold a real Bolna call. Opens in a new tab; this panel tracks it." requiresBackend={!settingsReady} busy={busy === 2} onRun={runBridge}>
-          <button className="btn btn--primary w-full justify-center" onClick={runBridge} disabled={!settingsReady || busy === 2}>
-            {busy === 2 ? <Loader2 size={15} className="animate-spin" /> : <Cpu size={15} />} Open the bridge
+        <RungCard n={2} title="Two-voice bridge" tag="real voices · no phone" desc="Saathi and a synthetic caller hold a real Bolna call. Opens in a new tab; this panel tracks it." requiresBackend={!settingsReady} busy={busy === 2}>
+          <button className="btn-b btn-b--go w-full" onClick={runBridge} disabled={!settingsReady || busy === 2}>
+            {busy === 2 ? <Loader2 size={15} className="spin" /> : <Cpu size={15} />} OPEN THE BRIDGE
           </button>
         </RungCard>
 
-        {/* Rung 3 */}
-        <RungCard n={3} title="Dial a verified phone" tag="the climax · live phone" desc="Saathi calls a real mobile and runs the alert flow. Trial account: only numbers verified in Bolna can be called." requiresBackend={!settingsReady} busy={busy === 3} onRun={runPhone}>
+        <RungCard n={3} title="Dial a verified phone" tag="live phone" desc="Saathi calls a real mobile and runs the alert flow. Trial account: only numbers verified in Bolna can be called." requiresBackend={!settingsReady} busy={busy === 3}>
           <div className="flex w-full gap-2">
-            <input
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="+91 98XXXXXXXX"
-              inputMode="tel"
-              className="surface2 hairline min-w-0 flex-1 rounded-lg px-3 py-2 text-[14px] outline-none focus:border-[var(--accent)]"
-            />
-            <button className="btn btn--primary" onClick={runPhone} disabled={!settingsReady || busy === 3} style={{ background: settingsReady ? undefined : "var(--muted)" }}>
-              {busy === 3 ? <Loader2 size={15} className="animate-spin" /> : <PhoneCall size={15} />}
+            <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+91 98XXXXXXXX" inputMode="tel" aria-label="Phone number to dial" className="field-b flex-1" />
+            <button className="btn-b btn-b--go" onClick={runPhone} disabled={!settingsReady || busy === 3} aria-label="Dial">
+              {busy === 3 ? <Loader2 size={15} className="spin" /> : <PhoneCall size={15} />}
             </button>
           </div>
         </RungCard>
@@ -197,43 +149,40 @@ export default function JudgeConsole() {
 
       {/* run status */}
       {run && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className={`mt-4 flex flex-wrap items-center gap-3 rounded-xl px-4 py-3 text-[13px] ${run.ok ? "pill--ok" : ""}`}
-          style={{
-            background: run.ok ? "color-mix(in srgb, var(--ok) 12%, transparent)" : "var(--surface2)",
-            border: `1px solid ${run.ok ? "color-mix(in srgb, var(--ok) 40%, transparent)" : "var(--line)"}`,
-            color: run.ok ? "var(--ok)" : "var(--ink)",
-          }}
+        <div
+          role="status"
+          className="mt-4 flex flex-wrap items-center gap-3 px-4 py-3 text-[13px]"
+          style={{ border: `1.5px solid ${run.ok ? "var(--green)" : run.ok === false ? "var(--red)" : "var(--line)"}`, background: "var(--paper)", color: run.ok ? "var(--green)" : run.ok === false ? "var(--red)" : "var(--ink)" }}
         >
-          <Info size={15} />
-          <span className="flex-1">{run.msg}</span>
+          <span className="min-w-0 flex-1" style={{ overflowWrap: "anywhere" }}>
+            {run.ok ? "✓ " : run.ok === false ? "✕ " : "… "}
+            {run.msg}
+          </span>
           {run.url && (
-            <a className="mono text-[12px] accent inline-flex items-center gap-1" href={run.url} target="_blank" rel="noreferrer">
-              open <Link2 size={12} />
+            <a className="text-[12px] underline" href={run.url} target="_blank" rel="noreferrer">
+              open →
             </a>
           )}
-        </motion.div>
+        </div>
       )}
 
       {/* live panel + backend's own pages */}
-      <div className="mt-6 grid gap-5 lg:grid-cols-[1.5fr_1fr]">
+      <div className="mt-5 grid gap-4 lg:grid-cols-[1.5fr_1fr]">
         <LiveCasePanel s={s} caseId={trackedCaseId} />
 
-        <div className="surface flex flex-col gap-4 rounded-3xl p-5 sm:p-6">
+        <div className="box flex min-w-0 flex-col gap-3 p-4">
           <div>
-            <p className="font-display text-[15px] font-bold">Open the backend's own pages</p>
-            <p className="text-[12px] text-muted">Project these next to the console during the demo.</p>
+            <p className="text-[14px] font-bold">Open the backend’s own pages</p>
+            <p className="text-[12px] text-mute">Project these next to the console during the demo.</p>
           </div>
-          <div className="grid gap-2.5">
-            <BackendLink s={s} href={`${s.backend}/case/${trackedCaseId ?? "latest"}`} label="Live complaint page" desc="/case — the 1930-ready draft as it fills" />
-            <BackendLink s={s} href={`${s.backend}/bank`} label="Bank fraud-ops queue" desc="/bank — cases ranked by ₹ × freshness" />
-            {run?.url && <BackendLink s={s} href={run.url} label="Two-voice bridge" desc="/bridge — Saathi + caller, live audio" />}
+          <div>
+            <BackendLink href={`${s.backend}/case/${trackedCaseId ?? "latest"}`} label="Live complaint page" desc="/case: the 1930-ready draft as it fills" />
+            <BackendLink href={`${s.backend}/bank`} label="Bank fraud-ops queue" desc="/bank: cases ranked by ₹ × freshness" />
+            {run?.url && <BackendLink href={run.url} label="Two-voice bridge" desc="/bridge: Saathi + caller, live audio" />}
           </div>
-          <div className="mt-auto rounded-xl p-3.5 text-[12px] text-muted" style={{ background: "var(--surface2)" }}>
+          <div className="mt-auto p-3 text-[12px] text-mute" style={{ border: "1px dashed var(--line)" }}>
             <b style={{ color: "var(--ink)" }}>Fallback rule:</b> if a phone rung times out or no-answers, keep the bridge
-            tab open — it already proves the voice pipeline end to end, and the replay always works offline.
+            tab open: it already proves the voice pipeline end to end, and the replay always works offline.
           </div>
         </div>
       </div>
@@ -247,57 +196,41 @@ function RungCard({
   tag,
   desc,
   children,
-  accent,
   requiresBackend,
   busy,
-  onRun,
 }: {
   n: number;
   title: string;
   tag: string;
   desc: string;
   children?: React.ReactNode;
-  accent?: boolean;
   requiresBackend?: boolean;
   busy?: boolean;
-  onRun?: () => void;
 }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 24 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-40px" }}
-      transition={{ duration: 0.5, delay: n * 0.08 }}
-      className="surface relative flex flex-col overflow-hidden rounded-2xl p-5"
-      style={accent ? { border: "1px solid color-mix(in srgb, var(--accent) 40%, transparent)", boxShadow: "0 0 44px -22px var(--glow)" } : undefined}
-    >
-      <div className="mb-3 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="grid size-8 place-items-center rounded-lg text-[13px] font-bold" style={{ background: "var(--glow-soft)", color: "var(--accent)" }}>
-            {n}
-          </div>
-          <p className="font-display text-[16px] font-bold">{title}</p>
-        </div>
-        <span className={`pill ${accent ? "pill--ok" : ""}`}>{tag}</span>
+    <div className="rung">
+      <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
+        <p className="text-[16px] font-extrabold">
+          <span className="rung-n">RUNG {n} · </span>
+          {title}
+        </p>
+        <span className="text-[11px] text-mute">{tag}</span>
       </div>
-      <p className="mb-4 flex-1 text-[13px] leading-relaxed text-muted">{desc}</p>
-      {requiresBackend && <p className="mb-3 text-[12px]" style={{ color: "var(--warn)" }}>Needs the backend URL + token in Settings.</p>}
-      {busy && <div className="mb-3 text-[12px] text-muted">working…</div>}
+      <p className="mb-4 flex-1 text-[13px] text-mute">{desc}</p>
+      {requiresBackend && <p className="mb-3 text-[12px] c-red">Needs the backend URL + token in settings.</p>}
+      {busy && <div className="mb-3 text-[12px] text-mute">working…</div>}
       {children}
-    </motion.div>
+    </div>
   );
 }
 
-function BackendLink({ s, href, label, desc }: { s: { backend: string }; href: string; label: string; desc: string }) {
+function BackendLink({ href, label, desc }: { href: string; label: string; desc: string }) {
   return (
-    <a href={href} target="_blank" rel="noreferrer" className="surface2 hairline group flex items-center gap-3 rounded-xl p-3 transition-colors hover:!border-[var(--accent)]">
-      <div className="grid size-9 place-items-center rounded-lg" style={{ background: "var(--glow-soft)" }}>
-        <Link2 size={16} className="accent" />
-      </div>
-      <div className="min-w-0">
-        <p className="text-[13px] font-semibold">{label}</p>
-        <p className="truncate text-[11px] text-muted">{desc}</p>
-      </div>
+    <a href={href} target="_blank" rel="noreferrer" className="kv" style={{ textDecoration: "none" }}>
+      <span>{label}</span>
+      <span>
+        <span className="c-green">{desc}</span> ↗
+      </span>
     </a>
   );
 }
@@ -316,15 +249,10 @@ function Field({
   placeholder?: string;
 }) {
   return (
-    <div className="flex flex-col gap-1.5">
-      <label className="text-[12px] font-semibold text-muted">{label}</label>
-      <input
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="surface2 hairline rounded-lg px-3 py-2.5 text-[14px] outline-none focus:border-[var(--accent)]"
-      />
-      <span className="text-[11px] text-muted">{hint}</span>
-    </div>
+    <label className="flex min-w-0 flex-col gap-1.5">
+      <span className="text-[12px] text-mute">{label}</span>
+      <input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="field-b" />
+      <span className="text-[11px] text-mute">{hint}</span>
+    </label>
   );
 }

@@ -1,5 +1,3 @@
-import { Github, Radio } from "lucide-react";
-
 const LINKS = [
   { label: "/case/latest", desc: "live complaint page" },
   { label: "/bank", desc: "fraud-ops queue" },
@@ -9,53 +7,43 @@ const LINKS = [
 
 export default function Footer() {
   return (
-    <footer className="relative border-t px-6 py-14" style={{ borderColor: "var(--line)", background: "var(--bg2)" }}>
-      <div className="mx-auto grid max-w-6xl gap-10 md:grid-cols-[1.4fr_1fr]">
+    <footer className="foot">
+      <div className="wrap grid gap-6 md:grid-cols-[1.4fr_1fr]">
         <div>
-          <div className="flex items-center gap-3">
-            <div className="grid size-11 place-items-center rounded-2xl" style={{ background: "var(--glow-soft)", border: "1px solid var(--line)" }}>
-              <Radio size={22} className="accent" />
-            </div>
-            <div>
-              <p className="font-display text-[18px] font-bold">Saathi 1930</p>
-              <p className="text-[12px] text-muted">a calm voice for the first minutes after fraud</p>
-            </div>
-          </div>
-          <p className="mt-5 max-w-md text-[13px] leading-relaxed text-muted">
-            A voice project for the BOLNA AI Symphony Buildathon. Built on Bolna (Sarvam STT/TTS + gpt-4.1-mini) with
-            a FastAPI ops backend on Render. Hinglish-first, consent-first, and it never asks for an OTP.
+          <p className="logo" style={{ fontSize: 15 }}>
+            saathi<span>/1930</span>
           </p>
-          <div className="mt-6 flex flex-wrap gap-2">
+          <p className="mt-2 max-w-[44em]">
+            A voice project for the Bolna Symphony Buildathon. Built on Bolna (Sarvam STT/TTS + gpt-4.1-mini) with a
+            FastAPI ops backend. Hindi/English, consent first, and it never asks for an OTP.
+          </p>
+          <p className="mt-3 flex flex-wrap gap-x-4 gap-y-1">
             {LINKS.map((l) => (
-              <span key={l.label} className="tag">
-                <span className="mono accent">{l.label}</span>
-                <span className="text-muted">{l.desc}</span>
+              <span key={l.label}>
+                <span className="c-green">{l.label}</span> {l.desc}
               </span>
             ))}
-          </div>
+          </p>
         </div>
-
-        <div className="md:justify-self-end">
-          <p className="mb-3 text-[12px] font-bold uppercase tracking-wider text-muted">All data synthetic</p>
-          <ul className="space-y-2 text-[13px] text-muted">
-            <li>· Names, UTRs and amounts are made up.</li>
-            <li>· UTRs start with <span className="mono accent">9999</span> so they can't match real transactions.</li>
-            <li>· No real complaint is filed; nothing is sent to 1930. Saathi only drafts it for the bank.</li>
-            <li>· RBI rules are public, sourced in <span className="mono">knowledge/</span>.</li>
+        <div>
+          <p className="h2" style={{ fontSize: 11 }}>
+            All data synthetic
+          </p>
+          <ul className="space-y-1">
+            <li>· Names, phone numbers, UTRs and amounts are made up. Demo Wallet is fictional.</li>
+            <li>
+              · UTRs start with <b style={{ color: "var(--ink)" }}>9999</b> so they can’t match real transactions.
+            </li>
+            <li>· No real complaint is filed and nothing is sent to 1930. Saathi only drafts it for the bank.</li>
+            <li>· Not affiliated with I4C or any bank. RBI rules are public, sourced in knowledge/.</li>
           </ul>
-          <a
-            className="btn btn--ghost mt-6"
-            href="https://github.com/JayanthMalladi/saathi-1930"
-            target="_blank"
-            rel="noreferrer"
-          >
-            <Github size={16} /> View the repo
+          <a className="btn-b mt-4" href="https://github.com/JayanthMalladi/saathi-1930" target="_blank" rel="noreferrer">
+            View the repo →
           </a>
         </div>
       </div>
-
-      <div className="mx-auto mt-10 flex max-w-6xl flex-wrap items-center justify-between gap-3 border-t pt-6 text-[12px] text-muted" style={{ borderColor: "var(--line)" }}>
-        <span>© 2026 · Saathi 1930 · demo build</span>
+      <div className="wrap mt-6 flex flex-wrap justify-between gap-2">
+        <span>saathi/1930 · Bolna Symphony Buildathon 2026 · demo build</span>
         <span>Never share your OTP or UPI PIN with anyone who calls you.</span>
       </div>
     </footer>
