@@ -857,67 +857,6 @@ button {
 }
 
 /* ---- how it works: the yes/no branch ---- */
-.flow {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  border: 1.5px solid var(--rule);
-  background: var(--paper);
-}
-.fl-q {
-  grid-column: 1 / -1;
-  padding: 16px;
-  border-bottom: 1.5px solid var(--rule);
-  font: 700 18px var(--mono);
-}
-.fl-q small {
-  display: block;
-  font-weight: 400;
-  font-size: 13px;
-  color: var(--mute);
-}
-.fl-q small[lang="hi"] {
-  font-size: 17px;
-  margin-top: 2px;
-}
-.fl-b {
-  padding: 16px;
-}
-.fl-b + .fl-b {
-  border-left: 1.5px solid var(--rule);
-}
-.fl-b h4 {
-  margin: 0 0 8px;
-  font: 800 15px var(--mono);
-}
-.fl-b ol {
-  margin: 0;
-  padding-left: 20px;
-  font-size: 13px;
-  list-style: decimal;
-}
-.fl-b li {
-  margin: 3px 0;
-}
-.fl-b code {
-  color: var(--green);
-}
-.never {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  border: 1.5px solid var(--rule);
-  border-top: 0;
-  background: var(--paper);
-}
-.never div {
-  padding: 12px 16px;
-  font-size: 13px;
-}
-.never div + div {
-  border-left: 1px dashed var(--line);
-}
-.never b {
-  color: var(--red);
-}
 .stack {
   margin-top: 18px;
   display: grid;
@@ -939,6 +878,576 @@ button {
 .stack .chips span.tl {
   color: var(--green);
   border-color: var(--green);
+}
+
+/* ---- how it works: the live workflow (components/Workflow.tsx) ---- */
+.wf {
+  border: 1.5px solid var(--rule);
+  background: var(--paper);
+  min-width: 0;
+}
+.wf-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line);
+  font-size: 12px;
+}
+.wf-pp {
+  width: 30px;
+  height: 30px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: var(--ink);
+  color: var(--bg);
+  cursor: pointer;
+}
+.wf-tt {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.wf-scrub {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  height: 30px;
+}
+.wf-scrub input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 2;
+}
+.wf-rail {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 9px;
+  height: 4px;
+  background: var(--line);
+}
+.wf-rail i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--red);
+}
+.wf-scrub input:focus-visible + .wf-rail {
+  outline: 2px solid var(--green);
+  outline-offset: 4px;
+}
+.wf-mk {
+  position: absolute;
+  top: 15px;
+  padding-left: 3px;
+  border-left: 1px solid var(--ink);
+  font-size: 9px;
+  line-height: 13px;
+  color: var(--mute);
+  white-space: nowrap;
+  pointer-events: none;
+}
+.wf-mk.br {
+  border-color: var(--red);
+}
+.wf-run {
+  color: var(--mute);
+  white-space: nowrap;
+}
+.wf-run b {
+  color: var(--ink);
+}
+.wf-ev {
+  padding: 5px 12px;
+  border-bottom: 1px solid var(--line);
+  font-size: 11.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.wf-ev span {
+  color: var(--mute);
+  margin-right: 6px;
+}
+.wf-cv {
+  background-color: var(--bg);
+  background-image: radial-gradient(var(--line) 1px, transparent 1.2px);
+  background-size: 18px 18px;
+}
+.wf-stage {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  align-items: start;
+  gap: 58px clamp(14px, 2vw, 24px);
+  padding: 22px clamp(12px, 1.6vw, 20px) 44px;
+  font-size: clamp(10px, 0.95vw, 11.5px);
+  line-height: 1.45;
+}
+.wf-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+.wf-e path {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 1.5;
+}
+.wf-e circle {
+  fill: var(--paper);
+  stroke: var(--line);
+  stroke-width: 1.2;
+}
+.wf-e.is-done path,
+.wf-e.is-done circle {
+  stroke: var(--ink);
+}
+.wf-e.is-live path:first-child {
+  stroke: var(--red);
+  stroke-dasharray: 5 4;
+  animation: wf-march 0.6s linear infinite;
+}
+.wf-e.is-live circle {
+  stroke: var(--red);
+}
+.wf-e.is-skip path {
+  stroke: var(--mute);
+  stroke-dasharray: 2 4;
+  opacity: 0.6;
+}
+.wf-e.is-back path {
+  stroke: var(--mute);
+  stroke-dasharray: 8 4 2 4;
+}
+.wf-e.is-back.is-done path {
+  stroke: var(--ink);
+}
+.wf-e .wf-draw {
+  stroke: var(--red);
+  stroke-width: 2;
+  stroke-dasharray: 1 1;
+  animation: wf-draw 0.8s linear both;
+}
+@keyframes wf-march {
+  to {
+    stroke-dashoffset: -9;
+  }
+}
+@keyframes wf-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.wf-pkt {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 12px;
+  height: 4px;
+  background: var(--red);
+  offset-rotate: auto;
+  z-index: 4;
+  pointer-events: none;
+  animation: wf-move 0.8s linear both;
+}
+.wf-pkt.is-data {
+  width: 7px;
+  height: 7px;
+  background: var(--green);
+  offset-rotate: 0deg;
+}
+@keyframes wf-move {
+  from {
+    offset-distance: 0%;
+  }
+  to {
+    offset-distance: 100%;
+  }
+}
+.wf-lab {
+  position: absolute;
+  z-index: 3;
+  transform: translate(-50%, -50%);
+  padding: 1px 6px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--mute);
+  font-size: 9.5px;
+  line-height: 1.3;
+  text-align: center;
+  white-space: nowrap;
+}
+.wf-lab b {
+  display: block;
+  font-weight: 700;
+}
+.wf-lab.is-side {
+  transform: translate(-100%, -50%);
+}
+.wf-lab.is-done {
+  color: var(--ink);
+  border-color: var(--ink);
+}
+.wf-lab.is-live {
+  color: var(--red);
+  border-color: var(--red);
+}
+
+.wf-n {
+  grid-column: var(--c);
+  grid-row: var(--r);
+  position: relative;
+  z-index: 2;
+  min-width: 0;
+  background: var(--bg);
+  border: 1.5px dashed var(--line);
+  transition:
+    background-color 0.35s,
+    border-color 0.35s,
+    opacity 0.35s;
+}
+.wf-nh {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 3px 8px;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.86em;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--mute);
+  white-space: nowrap;
+  overflow: hidden;
+}
+.wf-st {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.wf-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--red);
+  animation: blink 1.2s infinite;
+}
+.wf-in {
+  opacity: 0.5;
+  transform: translateY(4px);
+  transition:
+    opacity 0.4s,
+    transform 0.4s;
+}
+.wf-nt {
+  margin: 0;
+  padding: 6px 8px 2px;
+  font-size: 1.08em;
+  font-weight: 700;
+  color: var(--mute);
+  overflow-wrap: anywhere;
+}
+.k-tool .wf-nt::before {
+  content: "ƒ ";
+  color: var(--red);
+}
+.wf-nb {
+  padding: 0 8px 6px;
+  color: var(--mute);
+  overflow-wrap: anywhere;
+}
+.wf-nb [lang="hi"] {
+  display: block;
+  font-size: 1.05em;
+}
+.wf-k {
+  display: block;
+}
+.wf-say {
+  margin: 0 8px 8px;
+  padding-left: 7px;
+  min-height: 2.9em;
+  border-left: 3px solid transparent;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.wf-say b {
+  font-size: 0.86em;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-right: 4px;
+}
+.wf-say button {
+  border: 0;
+  padding: 0;
+  background: none;
+  color: var(--mute);
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline dotted;
+}
+.wf-pre {
+  margin: 4px 0 0;
+  padding: 5px 7px;
+  background: var(--bg);
+  font: 400 0.92em/1.45 var(--mono);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+.wf-ghost {
+  visibility: hidden;
+}
+.wf-caret {
+  display: inline-block;
+  width: 0;
+  height: 1.1em;
+  margin-right: -2px;
+  border-left: 2px solid var(--red);
+  vertical-align: -0.2em;
+}
+.wf-res {
+  display: block;
+  margin-top: 4px;
+}
+.wf-res b {
+  color: var(--green);
+}
+.wf-slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 5px;
+}
+.wf-slots > span {
+  padding: 0 3px;
+  border: 1px solid var(--line);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--mute);
+}
+.wf-slots > span.f {
+  border-color: var(--ink);
+}
+.wf-slots i {
+  font-style: normal;
+}
+.wf-slots i.f {
+  color: var(--ink);
+}
+.wf-kv {
+  margin: 4px 0 0;
+}
+.wf-kv div {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  border-top: 1px dashed var(--line);
+}
+.wf-kv dt {
+  flex: none;
+  color: var(--mute);
+}
+.wf-kv dd {
+  min-width: 0;
+  margin: 0;
+  text-align: right;
+  font-weight: 700;
+}
+.wf-new {
+  animation: wf-flash 1.5s ease-out;
+}
+@keyframes wf-flash {
+  from {
+    background: var(--hl);
+    color: var(--hl-ink);
+  }
+}
+.wf-q {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+}
+.wf-q li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0 6px;
+  padding: 2px 0;
+  border-top: 1px dashed var(--line);
+  overflow: hidden;
+}
+.wf-q small {
+  grid-column: 2 / -1;
+  font-size: 0.9em;
+  color: var(--mute);
+}
+.wf-q .wf-q-new {
+  background: var(--hl);
+  color: var(--hl-ink);
+  animation: wf-in-q 0.6s ease-out both;
+}
+.wf-q .wf-q-new small {
+  color: inherit;
+}
+@keyframes wf-in-q {
+  from {
+    max-height: 0;
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    max-height: 4em;
+    opacity: 1;
+    transform: none;
+  }
+}
+.wf-never {
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--ink);
+}
+.wf-never li::before {
+  content: "✕ ";
+  color: var(--red);
+  font-weight: 700;
+}
+
+/* node states: waiting is a faint outline; reached nodes fill in and slide up a few px */
+.wf-n:not(.is-pending) .wf-in {
+  opacity: 1;
+  transform: none;
+}
+.wf-n.is-reached,
+.wf-n.is-active,
+.wf-n.is-done {
+  background: var(--paper);
+  border-style: solid;
+  border-color: var(--ink);
+}
+.wf-n.is-reached .wf-nt,
+.wf-n.is-active .wf-nt,
+.wf-n.is-done .wf-nt,
+.wf-n.is-reached .wf-nb,
+.wf-n.is-active .wf-nb,
+.wf-n.is-done .wf-nb {
+  color: var(--ink);
+}
+.wf-n.is-done .wf-st {
+  color: var(--green);
+}
+.wf-n.is-active {
+  box-shadow: 0 0 0 1px var(--ink);
+}
+.wf-n.is-active .wf-nh {
+  background: var(--hl);
+  color: var(--hl-ink);
+  border-bottom-color: var(--ink);
+}
+.wf-n.is-active .wf-say {
+  border-left-color: var(--hl);
+}
+.wf-n.is-active .wf-st {
+  color: var(--red);
+}
+.wf-n.is-active.k-tool .wf-pre {
+  background: var(--hl);
+  color: var(--hl-ink);
+}
+.wf-n.is-skip {
+  opacity: 0.55;
+}
+.wf-n.is-skip .wf-in {
+  opacity: 1;
+  transform: none;
+  text-decoration: line-through;
+}
+.wf-n.k-note {
+  border-color: var(--mute);
+  background: var(--paper);
+}
+.wf.is-off * {
+  animation-play-state: paused !important;
+}
+.wf-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  padding: 7px 12px;
+  border-top: 1px solid var(--line);
+  font-size: 11px;
+  color: var(--mute);
+}
+.wf-legend i {
+  display: inline-block;
+  width: 22px;
+  margin-right: 6px;
+  vertical-align: middle;
+  border-top: 2px solid var(--ink);
+}
+.wf-legend i.is-live {
+  border-top-style: dashed;
+  border-color: var(--red);
+}
+.wf-legend i.is-pending {
+  border-color: var(--line);
+}
+.wf-legend i.is-skip {
+  border-top-style: dotted;
+  border-color: var(--mute);
+}
+.wf-legend i.is-back {
+  border-top-style: dashed;
+  border-color: var(--mute);
+}
+
+/* one column below 900px: the flow runs down, edges drop straight, the box scrolls itself */
+@media (max-width: 899px) {
+  .wf-bar {
+    flex-wrap: wrap;
+  }
+  .wf-scrub {
+    order: 5;
+    flex: 1 1 100%;
+  }
+  .wf-run {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: right;
+  }
+  .wf-cv {
+    max-height: min(74vh, 680px);
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+  .wf-stage {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 44px;
+    padding: 18px 40px 26px 22px;
+    font-size: 11.5px;
+  }
+  .wf-n {
+    order: var(--o);
+  }
+  .wf-lab.is-bk {
+    display: none;
+  }
 }
 
 /* ---- judge console ---- */
@@ -1010,15 +1519,12 @@ footer.foot {
   .hero {
     grid-template-columns: minmax(0, 1fr);
   }
-  .never,
   .stats {
     grid-template-columns: 1fr 1fr;
   }
-  .never div:nth-child(3),
   .stats > div:nth-child(3) {
     border-left: 0;
   }
-  .never div:nth-child(n + 3),
   .stats > div:nth-child(n + 3) {
     border-top: 1px dashed var(--line);
   }
@@ -1121,16 +1627,9 @@ footer.foot {
   .lg .win {
     grid-column: 1 / -1;
   }
-  .flow,
-  .never,
   .stats {
     grid-template-columns: 1fr;
   }
-  .fl-b + .fl-b {
-    border-left: 0;
-    border-top: 1.5px solid var(--rule);
-  }
-  .never div + div,
   .stats > div + div {
     border-left: 0;
     border-top: 1px dashed var(--line);
@@ -1147,5 +1646,9 @@ footer.foot {
   *::after {
     animation: none !important;
     scroll-behavior: auto !important;
+  }
+  .wf-n,
+  .wf-in {
+    transition: none !important;
   }
 }
