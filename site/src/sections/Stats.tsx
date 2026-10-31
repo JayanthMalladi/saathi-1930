@@ -47,6 +47,9 @@ export default function Stats() {
           </motion.div>
         ))}
       </div>
+      <p className="mt-4 text-[11px] text-muted">
+        Figures are taken from public reports and press coverage (sources under each number); they are not Saathi's own data.
+      </p>
     </section>
   );
 }

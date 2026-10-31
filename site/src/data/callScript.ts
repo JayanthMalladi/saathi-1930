@@ -1,5 +1,5 @@
-// A simulated Saathi ↔ Rohit call, modelled on test_calls V01 (fake customer care, AnyDesk)
-// and the live_scripts "scammer still on line" beat. All numbers use 9999-prefixed fake UTRs.
+// A simulated Saathi ↔ Rohit alert call, modelled on a real Bolna call (fake customer care, AnyDesk):
+// bank-flagged debit, safety step, consent, other debit with UTR, scammer phone, then next steps. All numbers use 9999-prefixed fake UTRs.
 
 export type Speaker = "saathi" | "rohit";
 
@@ -37,147 +37,137 @@ export const BEATS: Beat[] = [
   {
     id: "open",
     speaker: "saathi",
-    text: "Namaste Rohit, I am Saathi, from your bank's fraud team. I am calling about a debit that just happened. Aap Hindi mein baat karna chahenge, ya English mein?",
-    dur: 9,
+    text: "Namaste Rohit, main Saathi hoon, Demo Wallet ki fraud team se, aapke account ki ek payment ke baare mein. Aap Hindi mein baat karna chahenge, ya English mein?",
+    dur: 6.3,
+  },
+  { id: "lang", speaker: "rohit", text: "English.", dur: 1.4, form: { incident: { language: "English" } } },
+  {
+    id: "alert",
+    speaker: "saathi",
+    text: "Rs 18,000 was paid to refund.help@ybl at 14:53 today from your Demo Wallet. Did you make this payment yourself, yes or no?",
+    dur: 4.9,
+    note: "the bank already knows this debit — Saathi never asks for its details",
+    form: {
+      txn: { amount: 18000, mode: "UPI", utr: "on file with the bank", app: "Demo Wallet", bank: "Demo Wallet", time: "14:53", known: true },
+      suspect: { vpa: "refund.help@ybl" },
+      incident: { when: "Today, 14:53" },
+    },
   },
   {
-    id: "lang",
+    id: "no",
     speaker: "rohit",
-    text: "English. Please hurry — a man called me Google Pay customer care and money is going out of my account.",
-    dur: 8,
+    text: "No, I didn't. A man called as customer care and made me install AnyDesk.",
+    dur: 2.9,
+    form: { incident: { fraudType: "Fake customer care · remote app" } },
   },
   {
     id: "hangup",
     speaker: "saathi",
-    text: "Okay. First: hang up the call with that person and close the AnyDesk app, if it is open. Done?",
-    dur: 8,
+    text: "Please hang up the scammer's call and close any remote app now. Done?",
+    dur: 2.8,
     note: "safety step first — the scammer may still be on the line",
   },
-  {
-    id: "hangup-ok",
-    speaker: "rohit",
-    text: "Done. I have closed it.",
-    dur: 3,
-  },
+  { id: "hangup-ok", speaker: "rohit", text: "Done.", dur: 1.4 },
   {
     id: "consent",
     speaker: "saathi",
-    text: "Good. I am an AI helper, not the police. May I note your details and share them with the cyber cell and your bank?",
-    dur: 8,
-    tool: "record_consent",
-    form: { consent: { name: "Rohit", isAccountHolder: true } },
+    text: "I am an AI helper, not police or bank; may I note your details and share with cyber cell and bank?",
+    dur: 3.9,
   },
   {
     id: "consent-ok",
     speaker: "rohit",
-    text: "Yes, please note it down.",
-    dur: 3,
+    text: "Yes, please.",
+    dur: 1.4,
+    tool: "record_consent",
+    form: { consent: { name: "Rohit", isAccountHolder: true } },
   },
-  {
-    id: "story",
-    speaker: "saathi",
-    text: "Noted. Walk me through what happened with the 18,000 rupee debit.",
-    dur: 6,
-    form: {
-      incident: { fraudType: "Fake customer care", when: "Today, 21:40", language: "Hinglish" },
-      txn: { amount: 18000, mode: "UPI", utr: "9999 4072 1788", app: "GPay", bank: "HDFC Bank", time: "21:40" },
-    },
-  },
-  {
-    id: "story-ok",
-    speaker: "rohit",
-    text: "He said my KYC was blocked, told me to install AnyDesk. I installed it and then the money just went.",
-    dur: 9,
-  },
-  {
-    id: "other-debits",
-    speaker: "saathi",
-    text: "Was any other money taken out of your account?",
-    dur: 4,
-  },
+  { id: "other-debits", speaker: "saathi", text: "Did any other money leave your account, Rohit?", dur: 1.8 },
   {
     id: "other-debits-ok",
     speaker: "rohit",
-    text: "Yes. Another ten thousand, on Google Pay, 9:44 in the evening.",
-    dur: 6,
+    text: "Yes, Rs 10,000 more, on Google Pay, from HDFC Bank, at 9:44 pm.",
+    dur: 2.5,
   },
   {
     id: "utr-ask",
     speaker: "saathi",
-    text: "Okay, that debit's transaction number? Take your time, read it four digits at a time, I will wait.",
-    dur: 7,
+    text: "Please read that debit's transaction number, four digits at a time. I will wait.",
+    dur: 3.2,
   },
-  {
-    id: "utr-1",
-    speaker: "rohit",
-    text: "First part: 9999.",
-    dur: 3,
-    utr: [{ digits: "9999", echo: "9 9 9 9" }],
-  },
-  {
-    id: "utr-1-echo",
-    speaker: "saathi",
-    text: "9 9 9 9.",
-    dur: 2.5,
-  },
-  {
-    id: "utr-2",
-    speaker: "rohit",
-    text: "Next: 8885.",
-    dur: 3,
-    utr: [{ digits: "8885", echo: "8 8 8 5" }],
-  },
-  {
-    id: "utr-2-echo",
-    speaker: "saathi",
-    text: "8 8 8 5.",
-    dur: 2.5,
-  },
-  {
-    id: "utr-3",
-    speaker: "rohit",
-    text: "Last: 9278.",
-    dur: 3,
-    utr: [{ digits: "9278", echo: "9 2 7 8" }],
-  },
+  { id: "utr-1", speaker: "rohit", text: "9999.", dur: 1.4, utr: [{ digits: "9999", echo: "9 9 9 9" }] },
+  { id: "utr-1-echo", speaker: "saathi", text: "9 9 9 9.", dur: 1.4 },
+  { id: "utr-2", speaker: "rohit", text: "8885.", dur: 1.4, utr: [{ digits: "8885", echo: "8 8 8 5" }] },
+  { id: "utr-2-echo", speaker: "saathi", text: "8 8 8 5.", dur: 1.4 },
+  { id: "utr-3", speaker: "rohit", text: "9278.", dur: 1.4, utr: [{ digits: "9278", echo: "9 2 7 8" }] },
   {
     id: "utr-3-echo",
     speaker: "saathi",
-    text: "9 2 7 8. That is twelve digits: 9999 8885 9278. Saved.",
-    dur: 6,
+    text: "9 2 7 8. That is the full 12 digits, saved.",
+    dur: 1.7,
     tool: "add_transaction",
     form: {
-      txn: { amount: 10000, mode: "UPI", utr: "9999 8885 9278", app: "GPay", bank: "HDFC Bank", time: "21:44" },
-      suspect: { vpa: "refund.zepto@ybl" },
+      txn: { amount: 10000, mode: "UPI", utr: "9999 8885 9278", app: "Google Pay", bank: "HDFC Bank", time: "21:44" },
     },
+  },
+  {
+    id: "access",
+    speaker: "saathi",
+    text: "How did the scammer get in? Did you share an OTP, install an app, or take a call?",
+    dur: 3.2,
+  },
+  {
+    id: "access-ok",
+    speaker: "rohit",
+    text: "I installed AnyDesk.",
+    dur: 1.4,
+    form: { incident: { description: "Installed AnyDesk at the fake customer care caller's request" } },
+  },
+  {
+    id: "advice",
+    speaker: "saathi",
+    text: "Please uninstall AnyDesk, then change your UPI PIN from a safe phone.",
+    dur: 2.8,
   },
   {
     id: "suspect",
     speaker: "saathi",
-    text: "Do you have the scammer's phone number?",
-    dur: 4,
-    form: { suspect: { phone: "+91 90000 68912" } },
+    text: "What is the scammer's phone number? Five digits at a time, please.",
+    dur: 2.6,
   },
+  { id: "suspect-1", speaker: "rohit", text: "90000.", dur: 1.4 },
+  { id: "suspect-1-echo", speaker: "saathi", text: "9 0 0 0 0.", dur: 1.4 },
+  { id: "suspect-2", speaker: "rohit", text: "68912.", dur: 1.4 },
   {
-    id: "suspect-ok",
-    speaker: "rohit",
-    text: "Yes, 90000 68912.",
-    dur: 3,
+    id: "suspect-2-echo",
+    speaker: "saathi",
+    text: "6 8 9 1 2.",
+    dur: 1.4,
+    form: { suspect: { phone: "+91 90000 68912" } },
   },
   {
     id: "submit",
     speaker: "saathi",
-    text: "Your 1930 complaint is ready: two debits, twenty eight thousand in all. Now: call 1930 today, or file at cybercrime.gov.in. Tell your bank in writing today — within three working days your protection is strongest. Keep the screenshots. Never give anyone your OTP or PIN.",
-    dur: 12,
+    text: "Rohit, you lost Rs 18,000 and Rs 10,000, and installed AnyDesk. I will submit your case to the bank now.",
+    dur: 4.2,
     tool: "submit_case",
     form: { submitted: true },
   },
+  { id: "next-1930", speaker: "saathi", text: "Please call 1930 now, or file at cybercrime.gov.in.", dur: 2.0 },
   {
-    id: "thanks",
-    speaker: "rohit",
-    text: "Okay… thank you. I will do it now.",
-    dur: 4,
+    id: "next-bank",
+    speaker: "saathi",
+    text: "Tell your bank in writing today; protection is strongest within 3 working days.",
+    dur: 3.2,
   },
+  {
+    id: "next-keep",
+    speaker: "saathi",
+    text: "Keep all screenshots and chats, and never share your OTP or PIN.",
+    dur: 2.6,
+  },
+  { id: "thanks", speaker: "rohit", text: "Okay, thank you.", dur: 1.4 },
+  { id: "bye", speaker: "saathi", text: "Take care, Rohit, and stay safe.", dur: 1.4 },
 ];
 
 export type ConsentState = { name: string; isAccountHolder: boolean };
@@ -188,6 +178,8 @@ export type Txn = {
   app: string;
   bank: string;
   time: string;
+  /** the flagged debit: already on file from the bank's alert, not collected in the call */
+  known?: boolean;
 };
 export type Incident = { fraudType?: string; when?: string; language?: string; description?: string };
 export type Suspect = { phone?: string; vpa?: string };

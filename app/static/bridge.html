@@ -30,6 +30,9 @@
 const params = new URLSearchParams(location.hash.slice(1));
 const logEl = document.getElementById('log');
 const say = m => { logEl.textContent += `${new Date().toLocaleTimeString()}  ${m}\n`; };
+const wanted = params.get('scenario');  // the site's link can preselect the scenario
+const picker = document.getElementById('scenario');
+if (wanted && [...picker.options].some(o => o.value === wanted)) picker.value = wanted;
 if (!params.get('token') || !params.get('botkey')) say('This link is missing #token=...&botkey=...');
 
 // each web call asks for "the microphone"; hand it the other agent's voice instead

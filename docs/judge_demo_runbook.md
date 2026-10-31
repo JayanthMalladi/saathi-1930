@@ -4,7 +4,7 @@ A script for running the live demo in front of the judges, plus the exact fallba
 rung times out. Three rungs, safest first — **never skip a rung to the next one before the
 current one has visibly worked on screen.**
 
-> All data is synthetic. UTRs start `9999`. Nothing is filed with real 1930.
+> All data is synthetic. UTRs start `9999`. Nothing is filed with real 1930; Saathi builds a 1930-ready complaint draft for the bank.
 
 ## Before you get on stage (do this, not during the judges)
 
@@ -42,8 +42,11 @@ caller talk, on two separate Bolna voice sessions, with no human on the line.
   queue together. This is the strongest "it's a system, not a toy" shot.
 - Let it finish or stop it. Confirm you saw the case reach **Complaint ready**.
 
-### Rung 3 · Dial a judge (the climax)
-Only after Rung 2 visibly worked: type a judge's `+91…` number and press the phone button.
+### Rung 3 · Dial a verified phone (the climax)
+Only after Rung 2 visibly worked: type a `+91…` number and press the phone button. The live Bolna
+account is a trial and can only dial numbers verified in the Bolna dashboard, so verify the
+judge's (or your own) number there beforehand. An unverified number returns "Could not place the
+call: <Bolna's error>" instead of ringing.
 Saathi dials that phone from Bolna and runs the **alert call** ("was this you?"). On the
 projector, the **Live case** panel fills in as the real call happens, and the backend's `/bank`
 queue picks up the case. The judge on the phone is part of the demo — ask them to say "no, not
@@ -57,6 +60,7 @@ me" to trigger the fraud-intake path.
 
 | If … | do this |
 |---|---|
+| The phone rung says "Could not place the call" (number not verified in Bolna) |  Use your own verified phone, or stay on the **Rung 2 bridge tab**, which needs no phone number. |
 | A phone rung times out / no answer | Keep the **Rung 2 bridge tab open** — it already proves the voice pipeline end to end. Say the phone is "just for the judges to try." |
 | No credit on the call account | Same as above; the bridge uses the bot account, and replay is fully offline. |
 | Backend unreachable from the site | The **Replay** rung works with zero backend; the two-voice and phone rungs need it. Re-check Settings → URL/token and that the backend allows this origin (CORS). |
@@ -76,4 +80,4 @@ open <backend>/bank
 
 - Lead with the **RBI 3-working-day window** and "the complaint fills in *while* they talk" — that's the differentiator.
 - Point out the **safety rails**: it never asks for an OTP/PIN and never promises a refund.
-- If asked "is this a real 1930 filing?": **no — demo build, all data synthetic, UTRs are `9999`-prefixed.** Say it plainly; it's a buildathon.
+- If asked "is this a real 1930 filing?": **no, the caller still has to call 1930 — demo build, all data synthetic, UTRs are `9999`-prefixed.** Say it plainly; it's a buildathon.

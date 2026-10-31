@@ -47,8 +47,8 @@ export default function JudgeConsole() {
   // ---- rung 3: dial a real number (alert call). The response now carries the case id. ----
   async function runPhone() {
     if (!settingsReady) return;
-    const phoneClean = phone.replace(/\D/g, "");
-    if (phoneClean.length < 12) {
+    const phoneClean = "+91" + phone.replace(/\D/g, "").slice(-10); // backend wants +91XXXXXXXXXX
+    if (phoneClean.length < 10) {
       setRun({ rung: 3, msg: "Enter a full Indian mobile in +91XXXXXXXXXX form." });
       return;
     }
@@ -60,12 +60,12 @@ export default function JudgeConsole() {
         body: JSON.stringify({ phone: phoneClean, name: "Judge", amount: 15000, payee: "demo.payee@upi", token: s.token }),
       });
       const caseId = out.case_id;
-      setRun({
-        rung: 3,
-        msg: caseId ? "Call placed. Watch the case fill in below — and listen for your phone." : "Call placed (no case id returned yet; tracking the latest).",
-        ok: !!caseId,
-        caseId,
-      });
+      if (!out.placed) {
+        // trial Bolna accounts refuse numbers that are not verified in the dashboard
+        setRun({ rung: 3, msg: "Could not place the call: " + (out.error || "Bolna did not accept it"), ok: false, caseId });
+      } else {
+        setRun({ rung: 3, msg: "Call placed. Watch the case fill in below — and listen for your phone.", ok: true, caseId });
+      }
     } catch (e) {
       setRun({ rung: 3, msg: "Could not place the call: " + String((e as Error).message || e), ok: false });
     }
@@ -179,7 +179,7 @@ export default function JudgeConsole() {
         </RungCard>
 
         {/* Rung 3 */}
-        <RungCard n={3} title="Dial a judge" tag="the climax · live phone" desc="Saathi calls a real mobile and runs the alert flow. The complaint below fills in as it happens." requiresBackend={!settingsReady} busy={busy === 3} onRun={runPhone}>
+        <RungCard n={3} title="Dial a verified phone" tag="the climax · live phone" desc="Saathi calls a real mobile and runs the alert flow. Trial account: only numbers verified in Bolna can be called." requiresBackend={!settingsReady} busy={busy === 3} onRun={runPhone}>
           <div className="flex w-full gap-2">
             <input
               value={phone}
@@ -227,7 +227,7 @@ export default function JudgeConsole() {
             <p className="text-[12px] text-muted">Project these next to the console during the demo.</p>
           </div>
           <div className="grid gap-2.5">
-            <BackendLink s={s} href={`${s.backend}/case/${trackedCaseId ?? "latest"}`} label="Live complaint page" desc="/case — the 1930 form as it fills" />
+            <BackendLink s={s} href={`${s.backend}/case/${trackedCaseId ?? "latest"}`} label="Live complaint page" desc="/case — the 1930-ready draft as it fills" />
             <BackendLink s={s} href={`${s.backend}/bank`} label="Bank fraud-ops queue" desc="/bank — cases ranked by ₹ × freshness" />
             {run?.url && <BackendLink s={s} href={run.url} label="Two-voice bridge" desc="/bridge — Saathi + caller, live audio" />}
           </div>

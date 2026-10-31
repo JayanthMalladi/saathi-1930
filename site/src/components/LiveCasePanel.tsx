@@ -34,7 +34,10 @@ export default function LiveCasePanel({ s, caseId, pollMs = 2500 }: { s: Setting
   const [busy, setBusy] = useState(false);
   const dataRef = useRef<RealCase | null>(null);
 
+  const ready = !!(s.backend && s.token);
+
   useEffect(() => {
+    if (!ready) return; // nothing to poll until the backend and token are set
     let stop = false;
     const tick = async () => {
       try {
@@ -64,7 +67,7 @@ export default function LiveCasePanel({ s, caseId, pollMs = 2500 }: { s: Setting
       stop = true;
       clearInterval(id);
     };
-  }, [s, caseId, pollMs]);
+  }, [s, caseId, pollMs, ready]);
 
   const p = data?.priority;
   const total = p?.total_inr ?? (data ? data.transactions.reduce((a, t) => a + t.amount_inr, 0) : 0);
@@ -98,7 +101,12 @@ export default function LiveCasePanel({ s, caseId, pollMs = 2500 }: { s: Setting
       {/* body */}
       {!data ? (
         <div className="mt-6 flex flex-col items-center gap-3 py-10 text-center">
-          {err ? (
+          {!ready ? (
+            <>
+              <RefreshCw size={22} className="text-muted" />
+              <p className="text-[13px] text-muted">Add the backend URL and token in Settings to see a live case here.</p>
+            </>
+          ) : err ? (
             <>
               <RefreshCw size={22} className="text-muted" />
               <p className="text-[13px] text-muted">
@@ -124,7 +132,7 @@ export default function LiveCasePanel({ s, caseId, pollMs = 2500 }: { s: Setting
               className="flex items-center gap-2 rounded-lg px-3 py-2 text-[13px] font-bold"
               style={{ background: "color-mix(in srgb, var(--ok) 14%, transparent)", color: "var(--ok)" }}
             >
-              <FileCheck2 size={16} /> Complaint ready · ₹{total.toLocaleString("en-IN")} · sent to the bank queue
+              <FileCheck2 size={16} /> 1930-ready draft · ₹{total.toLocaleString("en-IN")} · sent to the bank queue
             </motion.div>
           )}
 
@@ -190,7 +198,7 @@ export default function LiveCasePanel({ s, caseId, pollMs = 2500 }: { s: Setting
 
       {/* status footer */}
       <div className="mt-5 flex items-center justify-between border-t pt-3 text-[11px] text-muted" style={{ borderColor: "var(--line)" }}>
-        <span>polling every {pollMs / 1000}s</span>
+        <span>{ready ? `polling every ${pollMs / 1000}s` : "not polling"}</span>
         <span>{data?.events?.length ? `${data.events.length} events` : "no events yet"}</span>
       </div>
     </div>

@@ -25,8 +25,8 @@ const PIPELINE = [
 
 const TOOLS = ["record_consent", "add_transaction", "submit_case"];
 const SINKS = [
-  { icon: FileText, label: "/case/latest", sub: "live complaint page" },
-  { icon: Building2, label: "/bank", sub: "fraud-ops queue" },
+  { icon: FileText, label: "/case/latest", sub: "1930-ready complaint draft" },
+  { icon: Building2, label: "/bank", sub: "bank gets the case" },
 ];
 
 const SAFETY = [

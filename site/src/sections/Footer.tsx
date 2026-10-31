@@ -40,7 +40,7 @@ export default function Footer() {
           <ul className="space-y-2 text-[13px] text-muted">
             <li>· Names, UTRs and amounts are made up.</li>
             <li>· UTRs start with <span className="mono accent">9999</span> so they can't match real transactions.</li>
-            <li>· No real complaint is filed; nothing is sent to 1930.</li>
+            <li>· No real complaint is filed; nothing is sent to 1930. Saathi only drafts it for the bank.</li>
             <li>· RBI rules are public, sourced in <span className="mono">knowledge/</span>.</li>
           </ul>
           <a

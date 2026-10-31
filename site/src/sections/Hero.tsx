@@ -66,10 +66,10 @@ export default function Hero() {
           className="mt-5 max-w-2xl text-[17px] leading-relaxed text-muted"
         >
           <b style={{ color: "var(--ink)" }}>Saathi</b> is a calm Hinglish voice agent that calls the victim in the
-          moment of shock, hears the story as it happens, and fills a complete{" "}
-          <b style={{ color: "var(--ink)" }}>1930 / cybercrime.gov.in complaint</b> live on screen — every UTR read
-          back and checked. Then the case lands in the bank's fraud-ops queue, ranked by money at stake and how fresh
-          the fraud is.
+          moment of shock, hears the story as it happens, and fills a{" "}
+          <b style={{ color: "var(--ink)" }}>1930-ready complaint draft</b> live on screen — every UTR read
+          back and checked. The caller is told to call 1930, and the case lands in the bank's fraud-ops queue, ranked
+          by money at stake and how fresh the fraud is.
         </motion.p>
 
         <motion.div
@@ -104,7 +104,7 @@ export default function Hero() {
         <Marquee
           items={[
             "Never asks for OTP, PIN or CVV",
-            "Files the 1930 complaint while they talk",
+            "Fills the 1930 complaint fields while they talk",
             "Every UTR read back & checked",
             "Bank queue ranked by money × freshness",
             "RBI 3-day window tracked per case",

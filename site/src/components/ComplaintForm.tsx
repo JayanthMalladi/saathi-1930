@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { useCallEngine } from "../engine/CallEngine";
 import { BEATS, CALL_META } from "../data/callScript";
 
-// The 1930 complaint filling in LIVE as the call plays.
+// The 1930-ready complaint draft filling in LIVE as the call plays.
 export default function ComplaintForm() {
   const { form, beat, idx } = useCallEngine();
   const inCall = idx >= 0 && idx < BEATS.length - 1 && !form.submitted;
@@ -11,14 +11,14 @@ export default function ComplaintForm() {
       {/* header */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="font-display text-[15px] font-bold">Cyber Fraud Complaint · draft</h3>
-          <p className="text-[12px] text-muted">Live · fills as Rohit talks · NCRP / 1930 fields</p>
+          <h3 className="font-display text-[15px] font-bold">1930-ready complaint · draft</h3>
+          <p className="text-[12px] text-muted">Live · fills as Rohit talks · fills the 1930 fields</p>
         </div>
         <span
           className={`pill ${inCall ? "pill--warn dot-live relative" : form.submitted ? "pill--ok" : ""}`}
         >
           <span className="relative z-10 grid size-1.5 place-items-center rounded-full" style={{ background: "currentColor" }} />
-          {form.submitted ? "Complaint ready" : inCall ? "On call" : "Waiting"}
+          {form.submitted ? "Draft ready" : inCall ? "On call" : "Waiting"}
         </span>
       </div>
 
@@ -30,26 +30,27 @@ export default function ComplaintForm() {
           className="absolute right-6 top-16 select-none rounded-md border-2 px-3 py-1 font-display text-[13px] font-extrabold uppercase tracking-widest"
           style={{ borderColor: "var(--ok)", color: "var(--ok)" }}
         >
-          Ready · ₹{CALL_META.total.toLocaleString("en-IN")}
+          Draft ready · ₹{CALL_META.total.toLocaleString("en-IN")}
         </motion.div>
       )}
 
       <div className="mt-5 space-y-4">
         <Block title="Complainant">
-          <Row label="Name" v={form.consent?.name} flash={beat?.id === "consent"} />
-          <Row label="Consent" v={form.consent ? "recorded ✓" : undefined} flash={beat?.id === "consent"} />
+          <Row label="Name" v={form.consent?.name} flash={beat?.id === "consent-ok"} />
+          <Row label="Consent" v={form.consent ? "recorded ✓" : undefined} flash={beat?.id === "consent-ok"} />
           <Row label="Mobile" v="Same as calling number" muted />
         </Block>
 
         <Block title="Incident">
-          <Row label="Fraud type" v={form.incident?.fraudType} flash={beat?.id === "story"} />
+          <Row label="Fraud type" v={form.incident?.fraudType} flash={beat?.id === "no"} />
           <Row label="When" v={form.incident?.when} />
           <Row label="Language" v={form.incident?.language} />
+          <Row label="How they got in" v={form.incident?.description} />
         </Block>
 
         <Block title="Transactions · one row per debit">
           {form.txns.length === 0 ? (
-            <p className="text-[13px] text-muted">Waiting for Rohit to confirm a debit…</p>
+            <p className="text-[13px] text-muted">The flagged debit appears from the bank alert…</p>
           ) : (
             <div className="space-y-2">
               {form.txns.map((t, i) => (
@@ -62,7 +63,7 @@ export default function ComplaintForm() {
                 >
                   <Field l="Amount" v={`₹${t.amount.toLocaleString("en-IN")}`} />
                   <Field l="Mode · App" v={`${t.mode} · ${t.app}`} />
-                  <Field l="UTR" v={t.utr.replace(/\d(?=(\d{4})+$)/g, " ")} mono accent />
+                  <Field l={t.known ? "UTR · from bank alert" : "UTR"} v={t.known ? t.utr : t.utr.replace(/\d(?=(\d{4})+$)/g, " ")} mono accent={!t.known} />
                 </motion.div>
               ))}
             </div>
@@ -76,7 +77,7 @@ export default function ComplaintForm() {
         </Block>
 
         <Block title="Suspect">
-          <Row label="Scammer phone" v={form.suspect?.phone} flash={beat?.id === "suspect"} />
+          <Row label="Scammer phone" v={form.suspect?.phone} flash={beat?.id === "suspect-2-echo"} />
           <Row label="UPI ID" v={form.suspect?.vpa} />
         </Block>
 
@@ -87,7 +88,7 @@ export default function ComplaintForm() {
           className="overflow-hidden"
         >
           <div className="rounded-xl p-3.5" style={{ background: "var(--glow-soft)" }}>
-            <p className="mb-2 text-[11px] font-bold uppercase tracking-wider accent">Next steps sent to the caller</p>
+            <p className="mb-2 text-[11px] font-bold uppercase tracking-wider accent">Next steps told to the caller</p>
             <ol className="space-y-1.5 text-[13px]">
               <li><b>1 · Call 1930 now</b> or file at cybercrime.gov.in with this summary.</li>
               <li><b>2 · Bank, in writing, today</b> — 3-working-day RBI window, keep the complaint no.</li>

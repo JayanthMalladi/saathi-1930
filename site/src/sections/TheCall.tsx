@@ -18,17 +18,18 @@ export default function TheCall() {
         </h2>
         <p className="mt-3 text-[15px] leading-relaxed text-muted">
           Press play and watch: while Rohit tells the story, Saathi asks one short question at a time, catches the
-          interrupted UTR in three pieces, and the 1930 complaint on the right fills itself. The numbers you see are
+          interrupted UTR in three pieces, and the 1930-ready complaint draft on the right fills itself (the caller still calls 1930). The numbers you see are
           synthetic — every UTR starts <span className="mono accent">9999</span>.
         </p>
       </motion.div>
 
-      <div className="grid gap-6 lg:grid-cols-[1.35fr_1fr]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.35fr_1fr]">
         <motion.div
           initial={{ opacity: 0, y: 28 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-60px" }}
           transition={{ duration: 0.6 }}
+          className="min-w-0"
         >
           <CallReplay />
         </motion.div>
@@ -38,7 +39,7 @@ export default function TheCall() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-60px" }}
           transition={{ duration: 0.6, delay: 0.15 }}
-          className="lg:sticky lg:top-24 lg:self-start"
+          className="min-w-0 lg:sticky lg:top-24 lg:self-start"
         >
           <ComplaintForm />
         </motion.div>

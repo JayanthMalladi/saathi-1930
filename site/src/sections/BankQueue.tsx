@@ -42,7 +42,7 @@ export default function BankQueue() {
           Cases land in a fraud-ops queue, ranked by money at stake × freshness.
         </h2>
         <p className="mt-3 text-[15px] leading-relaxed text-muted">
-          The mock "Demo Wallet" ops desk. Every Saathi case arrives structured, with the RBI window pre-computed, so
+          The mock "Demo Wallet" ops desk, shown with sample rows (not live data). Every Saathi case arrives structured, with the RBI window pre-computed, so
           the fraud team knows exactly which debit needs a dispute filed first.
         </p>
       </motion.div>
@@ -60,7 +60,7 @@ export default function BankQueue() {
             </div>
           </div>
           <div className="flex items-center gap-2 text-[12px] text-muted">
-            <Inbox size={15} /> live · 5 cases
+            <Inbox size={15} /> sample data · 5 cases
           </div>
         </div>
 

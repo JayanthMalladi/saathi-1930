@@ -463,12 +463,19 @@ async def alert_call(req: Request):
     admin(b.get("token"))
     phone = check_phone(b.get("phone"))
     c, user_data = alert_case(phone, b.get("name"), b.get("amount"), b.get("payee"))
-    # place the call; place_call returns the Bolna response dict on success, a JSONResponse on
-    # failure — so don't embed that object here, just report what the case knows
+    # place_call returns the Bolna response dict on success, a JSONResponse on failure: report what
+    # the case knows, and on failure Bolna's own error (a trial account can only dial verified numbers)
     out = place_call(c, user_data)
     placed = isinstance(out, dict)
-    return {"case_id": c["id"], "status": c.get("status"), "placed": placed,
-            "execution_id": c.get("execution_id"), "caller": c.get("caller_phone")}
+    res = {"case_id": c["id"], "status": c.get("status"), "placed": placed,
+           "execution_id": c.get("execution_id"), "caller": c.get("caller_phone")}
+    if not placed:
+        try:
+            body = json.loads(out.body)
+        except (AttributeError, ValueError):
+            body = {}
+        res["error"] = str(body.get("bolna_error") or body or "Bolna did not accept the call")
+    return res
 
 
 @app.get("/bridge")
