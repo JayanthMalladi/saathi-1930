@@ -26,7 +26,7 @@ export default function PlayerBar() {
             <i style={{ width: `${Math.min(100, (time / total) * 100)}%` }} />
           </span>
         </button>
-        <span className="lbl">Saathi → Rohit · call record DW-0412 · {recording ? "recording" : "simulated"}</span>
+        <span className="lbl">Saathi → Rohit · call record DW-0412 · {recording ? "reenactment" : "simulated"}</span>
       </div>
     </div>
   );

@@ -10,7 +10,7 @@ export default function TheCall() {
         <h2 className="h2">Call record</h2>
         <p className="h2-sub">
           {recording
-            ? "Transcript of the recorded call. Timestamps jump the audio."
+            ? "Transcript of the reenacted call. Timestamps jump the audio."
             : "The call script, line by line, on a simulated clock. Timestamps jump the replay."}{" "}
           Saathi’s lines follow the real Bolna call flow; names and numbers are synthetic.
         </p>
